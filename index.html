@@ -1,287 +1,211 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>x2HieuTrung was hereee</title>
-  <style>
-    * { box-sizing: border-box; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HT Storage - Hệ Thống Quản Lý File</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-body: #f4f7f6;
+            --bg-card: #ffffff;
+            --primary-color: #0056b3;
+            --primary-hover: #004494;
+            --text-main: #333333;
+            --text-muted: #777777;
+            --border-color: #e1e8ed;
+            --danger-color: #dc3545;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+            --radius: 10px;
+        }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f7fb;
-      color: #1f2937;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+        .dashboard-container { width: 100%; max-width: 1200px; display: grid; grid-template-columns: 300px 1fr; gap: 30px; }
 
-    .card {
-      width: 100%;
-      max-width: 760px;
-      background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-      padding: 24px;
-    }
+        /* Sidebar Styles */
+        .sidebar { background: var(--bg-card); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow); height: fit-content; position: sticky; top: 20px; }
+        .brand-logo { font-size: 22px; font-weight: 800; color: var(--primary-color); margin-bottom: 25px; display: flex; align-items: center; gap: 10px; justify-content: center;}
+        
+        /* Form Đăng Nhập bên Sidebar */
+        .login-box { width: 100%; }
+        .login-box h3 { font-size: 16px; margin-bottom: 15px; text-align: center; color: var(--text-main); }
+        .input-group { margin-bottom: 12px; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; }
+        .input-group input:focus { border-color: var(--primary-color); }
+        .btn-block { width: 100%; padding: 10px; background: var(--primary-color); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-block:hover { background: var(--primary-hover); }
 
-    h1 {
-      margin: 0 0 8px;
-      font-size: 28px;
-    }
+        /* Khung Upload bên Sidebar */
+        .upload-box { width: 100%; border: 2px dashed #b1bdc9; border-radius: var(--radius); padding: 30px 15px; text-align: center; background-color: #f8fafc; cursor: pointer; display: block; }
+        .upload-icon { font-size: 35px; color: var(--primary-color); margin-bottom: 10px; }
+        .upload-text-main { font-size: 14px; font-weight: 600; margin-bottom: 15px; }
+        #myFile { display: none; }
+        .btn-logout { width: 100%; padding: 8px; background: #f8d7da; color: #721c24; border: none; border-radius: 6px; margin-top: 15px; cursor: pointer; font-weight: 600; }
 
-    p {
-      margin: 0 0 16px;
-      color: #6b7280;
-    }
+        /* Main Content Styles */
+        .main-content { background: var(--bg-card); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow); }
+        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        
+        /* Card Tệp Tin */
+        .file-card { background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; transition: all 0.2s; }
+        .file-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
+        .file-icon-wrapper { font-size: 40px; margin-bottom: 15px; text-align: center; color: #b0bec5; }
+        .file-name { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all; }
+        .file-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 15px; display: flex; flex-direction: column; gap: 2px; }
+        
+        .file-actions { display: flex; gap: 8px; margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 10px; }
+        .action-btn { flex: 1; text-align: center; text-decoration: none; padding: 6px; font-size: 12px; border-radius: 4px; font-weight: 600; border: none; cursor: pointer; }
+        .btn-dl { background: #f0f7ff; color: var(--primary-color); }
+        .btn-del { background: #fff5f5; color: var(--danger-color); display: none; } /* Mặc định ẩn nút xóa */
 
-    .top-controls {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-      align-items: end;
-    }
+        .no-file { grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); font-style: italic; }
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    label {
-      font-size: 14px;
-      font-weight: 700;
-      color: #374151;
-    }
-
-    select, input[type="number"] {
-      border: 2px solid #d1d5db;
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 15px;
-      outline: none;
-      min-width: 160px;
-      background: #fff;
-    }
-
-    select:focus, input[type="number"]:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
-    }
-
-    textarea {
-      width: 100%;
-      height: 220px;
-      resize: vertical;
-      border: 2px solid #d1d5db;
-      border-radius: 14px;
-      padding: 16px;
-      font-size: 16px;
-      line-height: 1.6;
-      outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    textarea:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
-    }
-
-    .bottom {
-      margin-top: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .count {
-      font-weight: 700;
-      font-size: 15px;
-    }
-
-    .count.limit {
-      color: #dc2626;
-    }
-
-    .actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    button {
-      border: none;
-      background: #2563eb;
-      color: white;
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #1d4ed8;
-    }
-
-    .secondary {
-      background: #6b7280;
-    }
-
-    .secondary:hover {
-      background: #4b5563;
-    }
-
-    .note {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #dc2626;
-      min-height: 20px;
-    }
-  </style>
+        @media (max-width: 768px) { .dashboard-container { grid-template-columns: 1fr; } }
+    </style>
 </head>
 <body>
-  <div class="card">
-    <h1>x2HieuTrung was hereee</h1>
-    <p>hieu trung pro max</p>
 
-    <div class="top-controls">
-      <div class="field">
-        <label for="presetLimit">Chọn nhanh</label>
-        <select id="presetLimit">
-          <option value="200">200 từ</option>
-          <option value="600">600 từ</option>
-          <option value="custom">Tự nhập</option>
-        </select>
-      </div>
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="brand-logo">
+            <i class="fa-solid fa-cloud"></i> <span>HT Storage</span>
+        </div>
+        
+        <div id="loginSection" class="login-box">
+            <h3><i class="fa-solid fa-lock"></i> Admin Login</h3>
+            <div class="input-group">
+                <input type="text" id="username" placeholder="Tài khoản admin">
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="Mật khẩu">
+            </div>
+            <button class="btn-block" onclick="handleLogin()">Đăng nhập</button>
+        </div>
 
-      <div class="field">
-        <label for="customLimit">Giới hạn tùy chỉnh</label>
-        <input id="customLimit" type="number" min="1" value="200" />
-      </div>
+        <div id="uploadSection" class="upload-box" style="display: none;">
+            <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+                <label style="cursor: pointer;">
+                    <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                    <div class="upload-text-main">Chọn file tải lên</div>
+                    <input type="file" name="myFile" id="myFile" required onchange="document.getElementById('uploadForm').submit()">
+                </label>
+            </form>
+            <button class="btn-logout" onclick="handleLogout()">Đăng xuất Admin</button>
+        </div>
+    </aside>
 
-      <div class="field">
-        <button id="applyBtn">Áp dụng</button>
-      </div>
-    </div>
+    <main class="main-content">
+        <div class="content-header">
+            <h2>Kho Lưu Trữ Công Khai</h2>
+            <div id="fileCount" style="font-size: 14px; color: var(--text-muted);">0 tệp tin</div>
+        </div>
+        <div id="fileGrid" class="file-grid"></div>
+    </main>
+</div>
 
-    <textarea id="textInput" placeholder="Nhập nội dung tại đây..."></textarea>
+<script>
+    let IS_ADMIN = false;
 
-    <div class="bottom">
-      <div id="count" class="count">0 / 200 từ</div>
-      <div class="actions">
-        <button id="clearBtn" class="secondary">Xóa</button>
-      </div>
-    </div>
-
-    <div id="note" class="note"></div>
-  </div>
-
-  <script>
-    const textInput = document.getElementById('textInput');
-    const count = document.getElementById('count');
-    const note = document.getElementById('note');
-    const clearBtn = document.getElementById('clearBtn');
-    const presetLimit = document.getElementById('presetLimit');
-    const customLimit = document.getElementById('customLimit');
-    const applyBtn = document.getElementById('applyBtn');
-
-    let limit = 200;
-
-    function getWords(text) {
-      const trimmed = text.trim();
-      if (!trimmed) return [];
-      return trimmed.split(/\s+/);
+    function formatBytes(bytes) {
+        if (!+bytes) return '0 Bytes';
+        const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
     }
 
-    function countWords(text) {
-      return getWords(text).length;
+    // Kiểm tra trạng thái đăng nhập để setup giao diện
+    function checkAuth() {
+        return fetch('/api/auth-status')
+            .then(res => res.json())
+            .then(data => {
+                IS_ADMIN = data.isAdmin;
+                if (IS_ADMIN) {
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('uploadSection').style.display = 'block';
+                } else {
+                    document.getElementById('loginSection').style.display = 'block';
+                    document.getElementById('uploadSection').style.display = 'none';
+                }
+            });
     }
 
-    function trimToWordLimit(text, maxWords) {
-      const trimmedLeft = text.replace(/^\s+/, '');
-      const words = trimmedLeft.match(/\S+/g) || [];
-
-      if (words.length <= maxWords) return text;
-
-      return words.slice(0, maxWords).join(' ');
+    // Xử lý Đăng nhập
+    function handleLogin() {
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        
+        fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, password: p })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                checkAuth().then(() => loadFiles());
+            } else {
+                alert(data.message);
+            }
+        });
     }
 
-    function applyLimit(newLimit) {
-      const parsed = Number(newLimit);
-
-      if (!Number.isFinite(parsed) || parsed < 1) {
-        note.textContent = 'Vui lòng nhập giới hạn lớn hơn 0.';
-        return;
-      }
-
-      limit = Math.floor(parsed);
-
-      if (countWords(textInput.value) > limit) {
-        textInput.value = trimToWordLimit(textInput.value, limit);
-      }
-
-      customLimit.value = limit;
-      updateUI();
+    // Xử lý Đăng xuất
+    function handleLogout() {
+        fetch('/api/logout', { method: 'POST' })
+        .then(() => {
+            checkAuth().then(() => loadFiles());
+        });
     }
 
-    function updateUI() {
-      const totalWords = countWords(textInput.value);
-      count.textContent = `${totalWords} / ${limit} từ`;
+    // Lấy danh sách file công khai
+    function loadFiles() {
+        fetch('/api/files')
+            .then(res => res.json())
+            .then(files => {
+                const grid = document.getElementById('fileGrid');
+                document.getElementById('fileCount').innerText = `${files.length} tệp tin`;
+                grid.innerHTML = '';
 
-      if (totalWords >= limit) {
-        count.classList.add('limit');
-        note.textContent = `Đã đạt giới hạn ${limit} từ.`;
-      } else {
-        count.classList.remove('limit');
-        note.textContent = '';
-      }
+                if (files.length === 0) {
+                    grid.innerHTML = '<div class="no-file">Kho lưu trữ trống.</div>';
+                    return;
+                }
+
+                files.forEach(file => {
+                    const card = document.createElement('div');
+                    card.className = 'file-card';
+                    card.innerHTML = `
+                        <div class="file-icon-wrapper"><i class="fa-solid fa-file"></i></div>
+                        <div class="file-name" title="${file.filename}">${file.filename}</div>
+                        <div class="file-meta">
+                            <span>${formatBytes(file.size)}</span>
+                            <span>${file.upload_time}</span>
+                        </div>
+                        <div class="file-actions">
+                            <a href="/download/${file.id}" class="action-btn btn-dl"><i class="fa-solid fa-download"></i> Tải về</a>
+                            <button class="action-btn btn-del" style="display: ${IS_ADMIN ? 'block' : 'none'}" onclick="deleteFile(${file.id})"><i class="fa-solid fa-trash"></i> Xóa</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            });
     }
 
-    textInput.addEventListener('input', () => {
-      const words = countWords(textInput.value);
+    // Xóa file (Chỉ chạy được thành công nếu là Admin thực sự)
+    function deleteFile(id) {
+        if (confirm("Xóa vĩnh viễn tệp tin này?")) {
+            fetch(`/delete/${id}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) loadFiles();
+                    else alert(data.message);
+                });
+        }
+    }
 
-      if (words > limit) {
-        textInput.value = trimToWordLimit(textInput.value, limit);
-      }
-
-      updateUI();
-    });
-
-    presetLimit.addEventListener('change', () => {
-      if (presetLimit.value === 'custom') {
-        customLimit.focus();
-        return;
-      }
-
-      customLimit.value = presetLimit.value;
-      applyLimit(presetLimit.value);
-    });
-
-    applyBtn.addEventListener('click', () => {
-      presetLimit.value = 'custom';
-      applyLimit(customLimit.value);
-    });
-
-    customLimit.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        presetLimit.value = 'custom';
-        applyLimit(customLimit.value);
-      }
-    });
-
-    clearBtn.addEventListener('click', () => {
-      textInput.value = '';
-      updateUI();
-      textInput.focus();
-    });
-
-    applyLimit(200);
-  </script>
+    // Chạy khởi tạo ban đầu
+    checkAuth().then(() => loadFiles());
+</script>
 </body>
 </html>
