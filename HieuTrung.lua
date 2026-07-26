@@ -6,7 +6,7 @@ local v2 = loadstring(game:HttpGet('https://raw.githubusercontent.com/dawid-scri
 loadstring(game:HttpGet('https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua'))()
 
 local u3 = u1:CreateWindow({
-    Title = 'EDU HUB : Stand Upright Rebooted',
+    Title = 'DOG HUB ( x2HieuTrung Cracked ) : Stand Upright Rebooted',
     SubTitle = 'v3.0',
     TabWidth = 140,
     Size = UDim2.fromOffset(490, 390),
