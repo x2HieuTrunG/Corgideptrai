@@ -51,14 +51,6 @@ Background.BorderSizePixel = 0
 Background.ZIndex = 1000
 Background.Parent = ScreenGui
 
-local uiToggled = true
-UserInputService.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Enum.KeyCode.RightControl then
-        uiToggled = not uiToggled
-        ScreenGui.Enabled = uiToggled
-    end
-end)
-
 local MainBox = Instance.new("Frame")
 MainBox.Name = "MainBox"
 MainBox.Size = UDim2.new(0, 480, 0, 420)
@@ -80,10 +72,70 @@ MainStroke.Thickness = 1.5
 MainStroke.Transparency = 0.2
 MainStroke.Parent = MainBox
 
+-- Nút mở/đóng UI nhỏ ở góc màn hình khi UI chính bị ẩn
+local OpenButton = Instance.new("TextButton")
+OpenButton.Name = "OpenButton"
+OpenButton.Size = UDim2.new(0, 110, 0, 35)
+OpenButton.Position = UDim2.new(0, 15, 0, 15)
+OpenButton.BackgroundColor3 = Color3.fromRGB(14, 16, 24)
+OpenButton.BorderColor3 = Color3.fromRGB(0, 230, 255)
+OpenButton.BorderSizePixel = 1
+OpenButton.Font = Enum.Font.GothamBold
+OpenButton.Text = "⚙️ SHOW UI"
+OpenButton.TextColor3 = Color3.fromRGB(0, 230, 255)
+OpenButton.TextSize = 13
+OpenButton.Visible = false
+OpenButton.ZIndex = 2000
+OpenButton.Parent = ScreenGui
+
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(0, 8)
+OpenCorner.Parent = OpenButton
+
+-- Hàm chuyển đổi trạng thái ẩn/hiện UI
+local uiToggled = true
+local function toggleUI()
+    uiToggled = not uiToggled
+    MainBox.Visible = uiToggled
+    OpenButton.Visible = not uiToggled
+end
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Enum.KeyCode.RightControl then
+        toggleUI()
+    end
+end)
+
+OpenButton.MouseButton1Click:Connect(function()
+    toggleUI()
+end)
+
+-- Nút thu nhỏ/ẩn UI ngay góc trên bên phải của khung MainBox
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0, 75, 0, 24)
+ToggleButton.Position = UDim2.new(1, -85, 0, 12)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.Text = "HIDE UI"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 11
+ToggleButton.ZIndex = 1003
+ToggleButton.Parent = MainBox
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 6)
+ToggleCorner.Parent = ToggleButton
+
+ToggleButton.MouseButton1Click:Connect(function()
+    toggleUI()
+end)
+
 local Container = Instance.new("Frame")
 Container.Name = "Container"
-Container.Size = UDim2.new(1, -30, 1, -30)
-Container.Position = UDim2.new(0, 15, 0, 15)
+Container.Size = UDim2.new(1, -30, 1, -45)
+Container.Position = UDim2.new(0, 15, 0, 40)
 Container.BackgroundTransparency = 1
 Container.ZIndex = 1002
 Container.Parent = MainBox
@@ -294,7 +346,6 @@ local function triggerServerHop()
         end
     end)
     
-    
     task.spawn(function()
         while task.wait(1) do
             pcall(function()
@@ -325,7 +376,7 @@ if wasHopped or chooseVillage then
 else
     updateStatus("Generating PS Code...", "🌀")
     triggerServerHop()
-    task.wait(9e9) -- Dừng lại chờ hop lần đầu
+    task.wait(9e9)
 end
 
 updateStatus("Waiting Game Resources...", "⏳")
@@ -386,11 +437,7 @@ while task.wait(0.5) do
         end)
         
         oldRell = newRell
-        
-        
         triggerServerHop()
-        
-        
         task.wait(9e9)
     else
         updateStatus("Đang chờ Rellcoin... [" .. timerStr .. "]", "⏳")
