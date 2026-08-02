@@ -27,7 +27,6 @@ for name, icon in pairs(icons) do
     pcall(function()
         if writefile and getcustomasset and icon.url then
             local cleanUrl = string.gsub(icon.url, "%/revision/.*$", "")
-            
             if not isfile(icon.file) then
                 writefile(icon.file, game:HttpGet(cleanUrl))
             end
@@ -301,19 +300,55 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
     end)
 end
 
--- Cập nhật thông số hiển thị các stat khác
+-- Hàm lấy giá trị Rellcoin trực tiếp và triệt để từ dữ liệu ngầm của Player
+local function getRellCoins()
+    local val = 0
+    pcall(function()
+        local statz = player:FindFirstChild("statz")
+        if statz then
+            for _, child in ipairs(statz:GetChildren()) do
+                local nameLower = string.lower(child.Name)
+                if nameLower:find("rell") or nameLower == "rc" or nameLower == "rellcoin" or nameLower == "rellcoins" then
+                    val = tonumber(child.Value) or tonumber(child.Text) or 0
+                    if val > 0 then break end
+                end
+            end
+        end
+    end)
+    
+    if val == 0 then
+        pcall(function()
+            local mainUI = playerGui:FindFirstChild("Main")
+            if mainUI then
+                local ryo2 = mainUI:FindFirstChild("Ryo2")
+                if ryo2 then
+                    local amtLabel = ryo2:FindFirstChild("amt")
+                    if amtLabel then
+                        local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
+                        val = parseCoin(currentText)
+                    end
+                end
+            end
+        end)
+    end
+    return val
+end
+
+-- Cập nhật thông số hiển thị các stat khác an toàn
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
             local statz = player:FindFirstChild("statz")
             if statz then
-                local lvlFolder = statz:FindFirstChild("lvl")
+                local lvlFolder = statz:FindFirstChild("lvl") or statz:FindFirstChild("Level")
                 if lvlFolder then
-                    local lvlVal = lvlFolder:FindFirstChild("lvl") or lvlFolder:FindFirstChild("Value")
-                    if lvlVal then LevelLabel.Text = "Level: " + formatNumber(lvlVal.Value) and "Level: " .. formatNumber(lvlVal.Value) end
+                    local lvlVal = lvlFolder:FindFirstChild("lvl") or lvlFolder:FindFirstChild("Value") or lvlFolder:FindFirstChild("level")
+                    if lvlVal then 
+                        LevelLabel.Text = "Level: " .. formatNumber(lvlVal.Value) 
+                    end
                 end
 
-                local cashVal = statz:FindFirstChild("cash")
+                local cashVal = statz:FindFirstChild("cash") or statz:FindFirstChild("Ryo")
                 if cashVal then CashLabel.Text = "Cash: " .. formatNumber(cashVal.Value) end
 
                 local spinsVal = statz:FindFirstChild("spins") or statz:FindFirstChild("spin")
@@ -382,35 +417,7 @@ choosevillRemote:FireServer("occ", "kage")
 updateStatus("Selected Blaze & Kage!", "✅")
 
 updateStatus("Initializing Rellcoin Tracker...", "📡")
-task.wait(5)
-
--- Lấy nguồn đọc Rellcoin linh hoạt (Cả UI lẫn Data statz của game)
-local mainUI = playerGui:WaitForChild("Main", 999)
-local ryo2 = mainUI:WaitForChild("Ryo2", 999)
-local amtLabel = ryo2:WaitForChild("amt", 999)
-
-local function getRellCoins()
-    local val = 0
-    
-    pcall(function()
-        local statz = player:FindFirstChild("statz")
-        if statz then
-            local rellStat = statz:FindFirstChild("rellcoin") or statz:FindFirstChild("Rellcoin") or statz:FindFirstChild("RC")
-            if rellStat then
-                val = tonumber(rellStat.Value) or 0
-            end
-        end
-    end)
-    
-    --
-    if val == 0 then
-        pcall(function()
-            local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
-            val = parseCoin(currentText)
-        end)
-    end
-    return val
-end
+task.wait(3)
 
 local oldRell = 0
 repeat
