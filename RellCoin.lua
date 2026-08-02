@@ -1,4 +1,3 @@
-
 local WEBHOOK_URL = _G.webhook or ""
 
 if not game:IsLoaded() then
@@ -440,9 +439,8 @@ while task.wait(0.5) do
     else
         stuckTimer = stuckTimer + 0.5 
         
-        
         if stuckTimer >= 120 then
-            updateStatus(Over 2 Min no have Rellcoin , Create Code", "⚠️")
+            updateStatus("Over 2 Min no have Rellcoin, Create Code", "⚠️")
             triggerServerHop()
             task.wait(9e9)
         else
