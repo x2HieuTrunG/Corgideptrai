@@ -294,7 +294,7 @@ local function triggerServerHop()
         end
     end)
     
-    -- SPAM remote liên tục mỗi giây để đảm bảo game nhận lệnh hop
+    
     task.spawn(function()
         while task.wait(1) do
             pcall(function()
@@ -387,10 +387,10 @@ while task.wait(0.5) do
         
         oldRell = newRell
         
-        -- Kích hoạt hàm spam remote Hop
+        
         triggerServerHop()
         
-        -- Ngủ đông toàn bộ vòng lặp chính để nó không quét nữa, chỉ chờ bị đá sang server mới
+        
         task.wait(9e9)
     else
         updateStatus("Đang chờ Rellcoin... [" .. timerStr .. "]", "⏳")
