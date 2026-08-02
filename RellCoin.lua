@@ -72,7 +72,6 @@ MainStroke.Thickness = 1.5
 MainStroke.Transparency = 0.2
 MainStroke.Parent = MainBox
 
-
 local bgVisible = true
 local function toggleBackground()
     bgVisible = not bgVisible
@@ -85,16 +84,15 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
-
 local ToggleBgButton = Instance.new("TextButton")
 ToggleBgButton.Name = "ToggleBgButton"
 ToggleBgButton.Size = UDim2.new(0, 95, 0, 26)
 ToggleBgButton.Position = UDim2.new(1, -105, 0, 12)
-ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0) 
+ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 ToggleBgButton.BorderSizePixel = 0
 ToggleBgButton.Font = Enum.Font.GothamBold
 ToggleBgButton.Text = "HIDE BG"
-ToggleBgButton.TextColor3 = Color3.fromRGB(10, 10, 12) 
+ToggleBgButton.TextColor3 = Color3.fromRGB(10, 10, 12)
 ToggleBgButton.TextSize = 12
 ToggleBgButton.ZIndex = 1003
 ToggleBgButton.Parent = MainBox
@@ -242,7 +240,9 @@ end
 
 local function parseCoin(text)
     if not text then return 0 end
-    local cleanText = string.upper(tostring(text)):gsub("[^%d%.KM]", "")
+    local str = tostring(text)
+    str = string.gsub(str, ",", "")
+    local cleanText = string.upper(str):gsub("[^%d%.KM]", "")
     local multiplier = 1
     if string.find(cleanText, "K") then
         multiplier = 1000
@@ -252,7 +252,7 @@ local function parseCoin(text)
         cleanText = string.gsub(cleanText, "M", "")
     end
     local num = tonumber(cleanText)
-    return num and (num * multiplier) or 0
+    return num and math.floor(num * multiplier) or 0
 end
 
 local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
@@ -301,6 +301,7 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
     end)
 end
 
+-- Cập nhật thông số hiển thị các stat khác
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
@@ -309,7 +310,7 @@ task.spawn(function()
                 local lvlFolder = statz:FindFirstChild("lvl")
                 if lvlFolder then
                     local lvlVal = lvlFolder:FindFirstChild("lvl") or lvlFolder:FindFirstChild("Value")
-                    if lvlVal then LevelLabel.Text = "Level: " .. formatNumber(lvlVal.Value) end
+                    if lvlVal then LevelLabel.Text = "Level: " + formatNumber(lvlVal.Value) and "Level: " .. formatNumber(lvlVal.Value) end
                 end
 
                 local cashVal = statz:FindFirstChild("cash")
@@ -383,15 +384,38 @@ updateStatus("Selected Blaze & Kage!", "✅")
 updateStatus("Initializing Rellcoin Tracker...", "📡")
 task.wait(5)
 
+-- Lấy nguồn đọc Rellcoin linh hoạt (Cả UI lẫn Data statz của game)
 local mainUI = playerGui:WaitForChild("Main", 999)
 local ryo2 = mainUI:WaitForChild("Ryo2", 999)
 local amtLabel = ryo2:WaitForChild("amt", 999)
 
+local function getRellCoins()
+    local val = 0
+    
+    pcall(function()
+        local statz = player:FindFirstChild("statz")
+        if statz then
+            local rellStat = statz:FindFirstChild("rellcoin") or statz:FindFirstChild("Rellcoin") or statz:FindFirstChild("RC")
+            if rellStat then
+                val = tonumber(rellStat.Value) or 0
+            end
+        end
+    end)
+    
+    --
+    if val == 0 then
+        pcall(function()
+            local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
+            val = parseCoin(currentText)
+        end)
+    end
+    return val
+end
+
 local oldRell = 0
 repeat
     task.wait(0.5)
-    local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
-    oldRell = parseCoin(currentText)
+    oldRell = getRellCoins()
     CoinLabel.Text = formatNumber(oldRell)
 until oldRell > 0
 
@@ -405,9 +429,7 @@ local function formatTime(seconds)
 end
 
 while task.wait(0.5) do
-    local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
-    local newRell = parseCoin(currentText)
-    
+    local newRell = getRellCoins()
     CoinLabel.Text = formatNumber(newRell)
 
     local elapsed = os.time() - startTime
