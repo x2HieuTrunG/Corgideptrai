@@ -428,7 +428,7 @@ while task.wait(0.5) do
     local timerStr = formatTime(elapsed)
 
     if newRell > oldRell then
-        updateStatus("Rellcoin TĂNG! (" .. formatNumber(oldRell) .. " ➔ " .. formatNumber(newRell) .. ")", "🚨")
+        updateStatus("Claim Rellcoin! (" .. formatNumber(oldRell) .. " ➔ " .. formatNumber(newRell) .. ")", "🚨")
         
         task.spawn(function()
             sendDiscordWebhook(oldRell, newRell, timerStr)
@@ -446,7 +446,7 @@ while task.wait(0.5) do
             triggerServerHop()
             task.wait(9e9)
         else
-            updateStatus("Đang chờ Rellcoin... [" .. timerStr .. "] (Stuck: " .. math.floor(stuckTimer) .. "s/120s)", "⏳")
+            updateStatus("Farming Rellcoin... [" .. timerStr .. "] (Stuck: " .. math.floor(stuckTimer) .. "s/120s)", "⏳")
         end
     end
 end
