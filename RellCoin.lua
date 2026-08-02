@@ -283,7 +283,7 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
                     { ["name"] = "📊 Current Stats", ["value"] = currentStatsFormatted, ["inline"] = false }
                 },
                 ["footer"] = { 
-                    ["text"] = "Shindo Life Auto Hop • " .. os.date("%X"),
+                    ["text"] = "Kaitun Rellcoin • " .. os.date("%X"),
                     ["icon_url"] = icons.Spin.url 
                 }
             }
