@@ -270,7 +270,7 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
         ["avatar_url"] = icons.Rellcoin.url, 
         ["embeds"] = {
             {
-                ["title"] = "🪙 RELLCOIN INCREASED!",
+                ["title"] = "🪙 WebHook RellCoin!",
                 ["color"] = 65535,
                 ["thumbnail"] = { ["url"] = icons.Level.url }, 
                 ["fields"] = {
