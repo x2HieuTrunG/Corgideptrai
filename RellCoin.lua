@@ -410,7 +410,7 @@ repeat
 until oldRell > 0
 
 local startTime = os.time()
-local stuckTimer = 0 -- Biến đếm thời gian không tăng Rellcoin
+local stuckTimer = 0 
 
 local function formatTime(seconds)
     local hours = math.floor(seconds / 3600)
@@ -437,7 +437,7 @@ while task.wait(0.5) do
         triggerServerHop()
         task.wait(9e9)
     else
-        stuckTimer = stuckTimer + 0.5 -- Mỗi vòng lặp 0.5 giây cộng dồn
+        stuckTimer = stuckTimer + 0.5 
         
         
         if stuckTimer >= 120 then
