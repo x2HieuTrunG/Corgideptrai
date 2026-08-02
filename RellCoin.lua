@@ -85,17 +85,17 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
--- Nút ẩn/hiện màn hình đen nằm ở góc trên bên phải của MainBox
+
 local ToggleBgButton = Instance.new("TextButton")
 ToggleBgButton.Name = "ToggleBgButton"
-ToggleBgButton.Size = UDim2.new(0, 95, 0, 24)
+ToggleBgButton.Size = UDim2.new(0, 95, 0, 26)
 ToggleBgButton.Position = UDim2.new(1, -105, 0, 12)
-ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
+ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0) 
 ToggleBgButton.BorderSizePixel = 0
 ToggleBgButton.Font = Enum.Font.GothamBold
 ToggleBgButton.Text = "HIDE BG"
-ToggleBgButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBgButton.TextSize = 11
+ToggleBgButton.TextColor3 = Color3.fromRGB(10, 10, 12) 
+ToggleBgButton.TextSize = 12
 ToggleBgButton.ZIndex = 1003
 ToggleBgButton.Parent = MainBox
 
@@ -107,17 +107,19 @@ ToggleBgButton.MouseButton1Click:Connect(function()
     toggleBackground()
     if bgVisible then
         ToggleBgButton.Text = "HIDE BG"
-        ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
+        ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+        ToggleBgButton.TextColor3 = Color3.fromRGB(10, 10, 12)
     else
         ToggleBgButton.Text = "SHOW BG"
-        ToggleBgButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        ToggleBgButton.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
+        ToggleBgButton.TextColor3 = Color3.fromRGB(10, 10, 12)
     end
 end)
 
 local Container = Instance.new("Frame")
 Container.Name = "Container"
 Container.Size = UDim2.new(1, -30, 1, -45)
-Container.Position = UDim2.new(0, 15, 0, 40)
+Container.Position = UDim2.new(0, 15, 0, 45)
 Container.BackgroundTransparency = 1
 Container.ZIndex = 1002
 Container.Parent = MainBox
