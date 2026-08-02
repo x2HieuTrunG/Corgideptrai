@@ -300,7 +300,7 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
     end)
 end
 
--- Hàm lấy giá trị Rellcoin trực tiếp và triệt để từ dữ liệu ngầm của Player
+
 local function getRellCoins()
     local val = 0
     pcall(function()
@@ -334,7 +334,7 @@ local function getRellCoins()
     return val
 end
 
--- Cập nhật thông số hiển thị các stat khác an toàn
+
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
