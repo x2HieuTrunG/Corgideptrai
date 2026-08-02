@@ -300,40 +300,23 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
     end)
 end
 
-
 local function getRellCoins()
     local val = 0
     pcall(function()
-        local statz = player:FindFirstChild("statz")
-        if statz then
-            for _, child in ipairs(statz:GetChildren()) do
-                local nameLower = string.lower(child.Name)
-                if nameLower:find("rell") or nameLower == "rc" or nameLower == "rellcoin" or nameLower == "rellcoins" then
-                    val = tonumber(child.Value) or tonumber(child.Text) or 0
-                    if val > 0 then break end
+        local mainUI = playerGui:FindFirstChild("Main")
+        if mainUI then
+            local ryo2 = mainUI:FindFirstChild("Ryo2")
+            if ryo2 then
+                local amtLabel = ryo2:FindFirstChild("amt")
+                if amtLabel then
+                    local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
+                    val = parseCoin(currentText)
                 end
             end
         end
     end)
-    
-    if val == 0 then
-        pcall(function()
-            local mainUI = playerGui:FindFirstChild("Main")
-            if mainUI then
-                local ryo2 = mainUI:FindFirstChild("Ryo2")
-                if ryo2 then
-                    local amtLabel = ryo2:FindFirstChild("amt")
-                    if amtLabel then
-                        local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
-                        val = parseCoin(currentText)
-                    end
-                end
-            end
-        end)
-    end
     return val
 end
-
 
 task.spawn(function()
     while task.wait(0.5) do
@@ -427,6 +410,7 @@ repeat
 until oldRell > 0
 
 local startTime = os.time()
+local stuckTimer = 0 -- Biến đếm thời gian không tăng Rellcoin
 
 local function formatTime(seconds)
     local hours = math.floor(seconds / 3600)
@@ -453,6 +437,15 @@ while task.wait(0.5) do
         triggerServerHop()
         task.wait(9e9)
     else
-        updateStatus("Đang chờ Rellcoin... [" .. timerStr .. "]", "⏳")
+        stuckTimer = stuckTimer + 0.5 -- Mỗi vòng lặp 0.5 giây cộng dồn
+        
+        
+        if stuckTimer >= 120 then
+            updateStatus(Over 2 Min no have Rellcoin , Create Code", "⚠️")
+            triggerServerHop()
+            task.wait(9e9)
+        else
+            updateStatus("Đang chờ Rellcoin... [" .. timerStr .. "] (Stuck: " .. math.floor(stuckTimer) .. "s/120s)", "⏳")
+        end
     end
 end
