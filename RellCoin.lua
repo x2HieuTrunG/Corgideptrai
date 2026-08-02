@@ -72,64 +72,46 @@ MainStroke.Thickness = 1.5
 MainStroke.Transparency = 0.2
 MainStroke.Parent = MainBox
 
--- Nút mở/đóng UI nhỏ ở góc màn hình khi UI chính bị ẩn
-local OpenButton = Instance.new("TextButton")
-OpenButton.Name = "OpenButton"
-OpenButton.Size = UDim2.new(0, 110, 0, 35)
-OpenButton.Position = UDim2.new(0, 15, 0, 15)
-OpenButton.BackgroundColor3 = Color3.fromRGB(14, 16, 24)
-OpenButton.BorderColor3 = Color3.fromRGB(0, 230, 255)
-OpenButton.BorderSizePixel = 1
-OpenButton.Font = Enum.Font.GothamBold
-OpenButton.Text = "⚙️ SHOW UI"
-OpenButton.TextColor3 = Color3.fromRGB(0, 230, 255)
-OpenButton.TextSize = 13
-OpenButton.Visible = false
-OpenButton.ZIndex = 2000
-OpenButton.Parent = ScreenGui
 
-local OpenCorner = Instance.new("UICorner")
-OpenCorner.CornerRadius = UDim.new(0, 8)
-OpenCorner.Parent = OpenButton
-
--- Hàm chuyển đổi trạng thái ẩn/hiện UI
-local uiToggled = true
-local function toggleUI()
-    uiToggled = not uiToggled
-    MainBox.Visible = uiToggled
-    OpenButton.Visible = not uiToggled
+local bgVisible = true
+local function toggleBackground()
+    bgVisible = not bgVisible
+    Background.Visible = bgVisible
 end
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.RightControl then
-        toggleUI()
+        toggleBackground()
     end
 end)
 
-OpenButton.MouseButton1Click:Connect(function()
-    toggleUI()
-end)
+-- Nút ẩn/hiện màn hình đen nằm ở góc trên bên phải của MainBox
+local ToggleBgButton = Instance.new("TextButton")
+ToggleBgButton.Name = "ToggleBgButton"
+ToggleBgButton.Size = UDim2.new(0, 95, 0, 24)
+ToggleBgButton.Position = UDim2.new(1, -105, 0, 12)
+ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
+ToggleBgButton.BorderSizePixel = 0
+ToggleBgButton.Font = Enum.Font.GothamBold
+ToggleBgButton.Text = "HIDE BG"
+ToggleBgButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBgButton.TextSize = 11
+ToggleBgButton.ZIndex = 1003
+ToggleBgButton.Parent = MainBox
 
--- Nút thu nhỏ/ẩn UI ngay góc trên bên phải của khung MainBox
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Size = UDim2.new(0, 75, 0, 24)
-ToggleButton.Position = UDim2.new(1, -85, 0, 12)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
-ToggleButton.BorderSizePixel = 0
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Text = "HIDE UI"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 11
-ToggleButton.ZIndex = 1003
-ToggleButton.Parent = MainBox
+local ToggleBgCorner = Instance.new("UICorner")
+ToggleBgCorner.CornerRadius = UDim.new(0, 6)
+ToggleBgCorner.Parent = ToggleBgButton
 
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 6)
-ToggleCorner.Parent = ToggleButton
-
-ToggleButton.MouseButton1Click:Connect(function()
-    toggleUI()
+ToggleBgButton.MouseButton1Click:Connect(function()
+    toggleBackground()
+    if bgVisible then
+        ToggleBgButton.Text = "HIDE BG"
+        ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
+    else
+        ToggleBgButton.Text = "SHOW BG"
+        ToggleBgButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    end
 end)
 
 local Container = Instance.new("Frame")
