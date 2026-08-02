@@ -1,4 +1,4 @@
-task.wait(5)
+
 local WEBHOOK_URL = _G.webhook or ""
 
 if not game:IsLoaded() then
