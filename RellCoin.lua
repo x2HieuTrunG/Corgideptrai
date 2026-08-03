@@ -9,8 +9,23 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui", 999)
+
+
+coroutine.wrap(function()
+    repeat task.wait(1) until 
+    CoreGui:FindFirstChild('RobloxPromptGui') and 
+    CoreGui.RobloxPromptGui:FindFirstChild('promptOverlay') and 
+    CoreGui.RobloxPromptGui.promptOverlay:FindFirstChild('ErrorPrompt') and 
+    CoreGui.RobloxPromptGui.promptOverlay.ErrorPrompt:FindFirstChild('MessageArea') and 
+    CoreGui.RobloxPromptGui.promptOverlay.ErrorPrompt.MessageArea:FindFirstChild('ErrorFrame') and 
+    CoreGui.RobloxPromptGui.promptOverlay.ErrorPrompt.MessageArea.ErrorFrame:FindFirstChild('ErrorMessage')
+
+    TeleportService:Teleport(game.PlaceId) 
+end)()
+
 
 local FLAG_FILE = "svv_hopped.txt"
 local createArgs = { "createprivateserver", 5943872934 }
@@ -352,7 +367,7 @@ local function triggerServerHop()
     task.spawn(function()
         while task.wait(1) do
             pcall(function()
-                local startevent = player:FindFirstChild("startevent")
+                local startevent = player:FindFirstChild("startevent") or game:GetService("ReplicatedStorage"):FindFirstChild("startevent")
                 if startevent then
                     startevent:FireServer(unpack(createArgs))
                 end
@@ -361,57 +376,6 @@ local function triggerServerHop()
     end)
 end
 
-local wasHopped = false
-pcall(function()
-    if isfile and isfile(FLAG_FILE) then
-        wasHopped = true
-        delfile(FLAG_FILE)
-        updateStatus("Hop State Verified!", "⚡")
-    end
-end)
-
-task.wait(1)
-
-local chooseVillage = playerGui:FindFirstChild("choosevillage") or playerGui:WaitForChild("choosevillage", 5)
-
-if wasHopped or chooseVillage then
-    updateStatus("Bypassing Server Check...", "🛡️")
-else
-    updateStatus("Generating PS Code...", "🌀")
-    triggerServerHop()
-    task.wait(9e9)
-end
-
-updateStatus("Waiting Game Resources...", "⏳")
-chooseVillage = playerGui:WaitForChild("choosevillage", 999)
-
-local village = chooseVillage:WaitForChild("Village", 999)
-village:WaitForChild("Blaze", 999)
-
-local choosevillRemote = player:WaitForChild("choosevill", 999)
-
-task.wait(1)
-
-updateStatus("Selecting Blaze & Kage...", "🎯")
-choosevillRemote:FireServer("vill", "Blaze")
-task.wait(1)
-
-choosevillRemote:FireServer("occ", "kage")
-updateStatus("Selected Blaze & Kage!", "✅")
-
-updateStatus("Initializing Rellcoin Tracker...", "📡")
-task.wait(3)
-
-local oldRell = 0
-repeat
-    task.wait(0.5)
-    oldRell = getRellCoins()
-    CoinLabel.Text = formatNumber(oldRell)
-until oldRell > 0
-
-local startTime = os.time()
-local stuckTimer = 0 
-
 local function formatTime(seconds)
     local hours = math.floor(seconds / 3600)
     local mins = math.floor((seconds % 3600) / 60)
@@ -419,32 +383,74 @@ local function formatTime(seconds)
     return string.format("%02d:%02d:%02d", hours, mins, secs)
 end
 
-while task.wait(0.5) do
-    local newRell = getRellCoins()
-    CoinLabel.Text = formatNumber(newRell)
 
-    local elapsed = os.time() - startTime
-    local timerStr = formatTime(elapsed)
+local currentPlaceId = game.PlaceId
 
-    if newRell > oldRell then
-        updateStatus("Claim Rellcoin! (" .. formatNumber(oldRell) .. " ➔ " .. formatNumber(newRell) .. ")", "🚨")
-        
-        task.spawn(function()
-            sendDiscordWebhook(oldRell, newRell, timerStr)
-        end)
-        
-        oldRell = newRell
-        triggerServerHop()
-        task.wait(9e9)
-    else
-        stuckTimer = stuckTimer + 0.5 
-        
-        if stuckTimer >= 120 then
-            updateStatus("Over 2 Min no have Rellcoin, Create Code", "⚠️")
-            triggerServerHop()
+if currentPlaceId == 4616652839 then
+    updateStatus("Main Menu Detected! Generating PS Code...", "🌀")
+    triggerServerHop()
+    task.wait(9e9)
+
+elseif currentPlaceId == 1511883870 or currentPlaceId == 5943872934 then
+    updateStatus("Game Map Detected! Waiting Resources...", "⏳")
+    
+    local chooseVillage = playerGui:WaitForChild("choosevillage", 999)
+    local village = chooseVillage:WaitForChild("Village", 999)
+    village:WaitForChild("Blaze", 999)
+
+    local choosevillRemote = player:WaitForChild("choosevill", 999)
+
+    task.wait(1)
+
+    updateStatus("Selecting Blaze & Kage...", "🎯")
+    pcall(function() choosevillRemote:FireServer("vill", "Blaze") end)
+    task.wait(1)
+    pcall(function() choosevillRemote:FireServer("occ", "kage") end)
+    updateStatus("Selected Blaze & Kage!", "✅")
+
+    updateStatus("Initializing Rellcoin Tracker...", "📡")
+    task.wait(3)
+
+    local oldRell = 0
+    repeat
+        task.wait(0.5)
+        oldRell = getRellCoins()
+        CoinLabel.Text = formatNumber(oldRell)
+    until oldRell > 0
+
+    local startTime = os.time()
+    local stuckTimer = 0 
+
+    while task.wait(0.5) do
+        local newRell = getRellCoins()
+        CoinLabel.Text = formatNumber(newRell)
+
+        local elapsed = os.time() - startTime
+        local timerStr = formatTime(elapsed)
+
+        if newRell > oldRell then
+            updateStatus("Claim Rellcoin! (" .. formatNumber(oldRell) .. " ➔ " .. formatNumber(newRell) .. ")", "🚨")
+            
+            task.spawn(function()
+                sendDiscordWebhook(oldRell, newRell, timerStr)
+            end)
+            
+            oldRell = newRell
+            triggerServerHop() 
             task.wait(9e9)
         else
-            updateStatus("Farming Rellcoin... [" .. timerStr .. "] (Stuck: " .. math.floor(stuckTimer) .. "s/120s)", "⏳")
+            stuckTimer = stuckTimer + 0.5 
+            
+            if stuckTimer >= 120 then
+                updateStatus("Over 2 Min no have Rellcoin, Create Code", "⚠️")
+                triggerServerHop() 
+                task.wait(9e9)
+            else
+                updateStatus("Farming Rellcoin... [" .. timerStr .. "] (Stuck: " .. math.floor(stuckTimer) .. "s/120s)", "⏳")
+            end
         end
     end
+
+else
+    updateStatus("No Work Place ID! Current: " .. tostring(currentPlaceId), "❌")
 end
