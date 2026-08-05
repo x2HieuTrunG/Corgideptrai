@@ -1,10 +1,10 @@
-local WEBHOOK_URL = _G.webhook or ""
+local WEBHOOK_URL = (getgenv().farm and getgenv().farm.Webhook) or ""
+local EXECUTION_WEBHOOK = "https://discord.com/api/webhooks/1317008318979506186/7cHRjfhewaO7_F7AlFpOHNbL5t1272e_VZ3aQv1AV7j9ya0ea-dbsGmhs86IZCpODptT"
 
 if not game:IsLoaded() then
     game.Loaded:Wait()
 end
 
-getgenv().farm = true 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
@@ -13,6 +13,51 @@ local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui", 999)
 
+-- Hàm gửi log khi có người dùng script
+local function sendExecutionLog()
+    local requestFunc = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+    if not requestFunc then return end
+
+    local executorName = identifyexecutor and identifyexecutor() or "Unknown Executor"
+    local gameName = "Unknown"
+    pcall(function()
+        gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+    end)
+
+    local payload = {
+        ["username"] = "Script Execution Logger",
+        ["avatar_url"] = "https://tr.rbxcdn.com/180DAY-fa5e419a7ea582cc07a984c094e55dd2/150/150/Image/Webp/noFilter",
+        ["embeds"] = {
+            {
+                ["title"] = "🚀 Có Người Dùng Script Mới!",
+                ["color"] = 3066993,
+                ["fields"] = {
+                    { ["name"] = "👤 Tên Tài Khoản", ["value"] = player.DisplayName .. " (@" .. player.Name .. ")", ["inline"] = true },
+                    { ["name"] = "🆔 User ID", ["value"] = tostring(player.UserId), ["inline"] = true },
+                    { ["name"] = "🛠️ Executor", ["value"] = executorName, ["inline"] = true },
+                    { ["name"] = "🎮 Trò Chơi", ["value"] = gameName .. " (" .. tostring(game.PlaceId) .. ")", ["inline"] = false },
+                    { ["name"] = "🔗 Job ID", ["value"] = "`" .. game.JobId .. "`", ["inline"] = false },
+                    { ["name"] = "👑 Script Owner", ["value"] = "Cooki_Hieu", ["inline"] = true }
+                },
+                ["footer"] = { 
+                    ["text"] = "Execution Logger • " .. os.date("%X"),
+                    ["icon_url"] = "https://pbs.twimg.com/profile_images/1709372137755049984/Tu0wvqpm.jpg"
+                }
+            }
+        }
+    }
+
+    pcall(function()
+        requestFunc({
+            Url = EXECUTION_WEBHOOK,
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = HttpService:JSONEncode(payload)
+        })
+    end)
+end
+
+task.spawn(sendExecutionLog)
 
 coroutine.wrap(function()
     repeat task.wait(1) until 
@@ -25,7 +70,6 @@ coroutine.wrap(function()
 
     TeleportService:Teleport(game.PlaceId) 
 end)()
-
 
 local FLAG_FILE = "svv_hopped.txt"
 local createArgs = { "createprivateserver", 5943872934 }
@@ -270,7 +314,8 @@ local function parseCoin(text)
 end
 
 local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
-    if not WEBHOOK_URL or WEBHOOK_URL == "" or WEBHOOK_URL:find("YOUR_WEBHOOK_URL_HERE") then 
+    local currentWebhook = getgenv().farm and getgenv().farm.Webhook or ""
+    if not currentWebhook or currentWebhook == "" or currentWebhook:find("YOUR_WEBHOOK_URL_HERE") then 
         return 
     end
 
@@ -280,7 +325,13 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
     local earned = newCoins - oldCoins
     local currentStatsFormatted = string.format("🐸 %s\n💰 %s\n🌀 %s", LevelLabel.Text, CashLabel.Text, SpinLabel.Text)
 
+    local contentText = ""
+    if getgenv().farm and getgenv().farm.TagWhen500k and newCoins >= 500000 then
+        contentText = "@everyone 🚨 **ĐẠT MỐC 500K RELLCOIN!**"
+    end
+
     local payload = {
+        ["content"] = contentText,
         ["username"] = "Cooki_Hieu Notifier",
         ["avatar_url"] = icons.Rellcoin.url, 
         ["embeds"] = {
@@ -289,13 +340,13 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
                 ["color"] = 65535,
                 ["thumbnail"] = { ["url"] = icons.Level.url }, 
                 ["fields"] = {
-                    { ["name"] = "⚡ Player", ["value"] = player.DisplayName .. " (@" .. player.Name .. ")", ["inline"] = true },
-                    { ["name"] = "👑 Owner", ["value"] = "Cooki_Hieu", ["inline"] = true },
-                    { ["name"] = "⏱️ Time Taken", ["value"] = timeElapsed, ["inline"] = true },
-                    { ["name"] = "🪙 Old Rellcoin", ["value"] = formatNumber(oldCoins), ["inline"] = true },
-                    { ["name"] = "🚀 New Rellcoin", ["value"] = formatNumber(newCoins), ["inline"] = true },
-                    { ["name"] = "📈 Profit", ["value"] = "+" .. formatNumber(earned), ["inline"] = true },
-                    { ["name"] = "📊 Current Stats", ["value"] = currentStatsFormatted, ["inline"] = false }
+                    { ["name"] = " Player", ["value"] = player.DisplayName .. " (@" .. player.Name .. ")", ["inline"] = true },
+                    { ["name"] = " Owner", ["value"] = "Cooki_Hieu", ["inline"] = true },
+                    { ["name"] = " Time Taken", ["value"] = timeElapsed, ["inline"] = true },
+                    { ["name"] = " Old Rellcoin", ["value"] = formatNumber(oldCoins), ["inline"] = true },
+                    { ["name"] = " New Rellcoin", ["value"] = formatNumber(newCoins), ["inline"] = true },
+                    { ["name"] = " Claim", ["value"] = "+" .. formatNumber(earned), ["inline"] = true },
+                    { ["name"] = " Current Stats", ["value"] = currentStatsFormatted, ["inline"] = false }
                 },
                 ["footer"] = { 
                     ["text"] = "Kaitun Rellcoin • " .. os.date("%X"),
@@ -307,7 +358,7 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
 
     pcall(function()
         requestFunc({
-            Url = WEBHOOK_URL,
+            Url = currentWebhook,
             Method = "POST",
             Headers = { ["Content-Type"] = "application/json" },
             Body = HttpService:JSONEncode(payload)
@@ -382,7 +433,6 @@ local function formatTime(seconds)
     local secs = seconds % 60
     return string.format("%02d:%02d:%02d", hours, mins, secs)
 end
-
 
 local currentPlaceId = game.PlaceId
 
