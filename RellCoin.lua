@@ -13,7 +13,7 @@ local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui", 999)
 
--- Hàm gửi log khi có người dùng script
+
 local function sendExecutionLog()
     local requestFunc = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
     if not requestFunc then return end
