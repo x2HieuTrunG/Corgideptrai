@@ -437,12 +437,12 @@ end
 local currentPlaceId = game.PlaceId
 
 if currentPlaceId == 4616652839 then
-    updateStatus("Main Menu Detected! Generating PS Code...", "🌀")
+    updateStatus("Generating PS Code...", "🌀")
     triggerServerHop()
     task.wait(9e9)
 
 elseif currentPlaceId == 1511883870 or currentPlaceId == 5943872934 then
-    updateStatus("Game Map Detected! Waiting Resources...", "⏳")
+    updateStatus("Waiting Resources...", "⏳")
     
     local chooseVillage = playerGui:WaitForChild("choosevillage", 999)
     local village = chooseVillage:WaitForChild("Village", 999)
