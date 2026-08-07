@@ -1,9 +1,60 @@
 local WEBHOOK_URL = (getgenv().farm and getgenv().farm.Webhook) or ""
 local EXECUTION_WEBHOOK = "https://discord.com/api/webhooks/1317008318979506186/7cHRjfhewaO7_F7AlFpOHNbL5t1272e_VZ3aQv1AV7j9ya0ea-dbsGmhs86IZCpODptT"
+local BOOST_FPS = true
+
+if getgenv().farm and getgenv().farm.BoostFps ~= nil then
+    BOOST_FPS = getgenv().farm.BoostFps
+end
 
 if not game:IsLoaded() then
     game.Loaded:Wait()
 end
+
+-- fps 
+if BOOST_FPS then
+    local g = game
+    local s = settings()
+    local lighting = g:GetService("Lighting")
+    
+    pcall(function()
+        s.Rendering.QualityLevel = Enum.QualityLevel.Level01
+    end)
+    
+    local function optimize(obj)
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.Plastic
+            obj.Reflectance = 0
+        elseif obj:IsA("Decal") or obj:IsA("Texture") then
+            obj:Destroy()
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+            obj.Enabled = false
+        elseif obj:IsA("Explosion") then
+            obj.BlastPressure = 0
+            obj.BlastRadius = 0
+        end
+    end
+    
+    for _,v in pairs(g:GetDescendants()) do
+        pcall(function() optimize(v) end)
+    end
+    
+    g.DescendantAdded:Connect(function(v)
+        pcall(function() optimize(v) end)
+    end)
+    
+    lighting.GlobalShadows = false
+    lighting.FogEnd = 1e9
+    lighting.Brightness = 0
+    lighting.EnvironmentDiffuseScale = 0
+    lighting.EnvironmentSpecularScale = 0
+
+    for _,v in pairs(lighting:GetChildren()) do
+        if v:IsA("PostEffect") then
+            v.Enabled = false
+        end
+    end
+end
+-- [ END FPS BOOST LOGIC ] --
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
