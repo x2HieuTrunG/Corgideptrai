@@ -28,15 +28,15 @@ local function sendExecutionLog()
         ["avatar_url"] = "https://tr.rbxcdn.com/180DAY-fa5e419a7ea582cc07a984c094e55dd2/150/150/Image/Webp/noFilter",
         ["embeds"] = {
             {
-                ["title"] = "🚀 Có Người Dùng Script Mới!",
+                ["title"] = "Log",
                 ["color"] = 3066993,
                 ["fields"] = {
-                    { ["name"] = "👤 Tên Tài Khoản", ["value"] = player.DisplayName .. " (@" .. player.Name .. ")", ["inline"] = true },
-                    { ["name"] = "🆔 User ID", ["value"] = tostring(player.UserId), ["inline"] = true },
+                    { ["name"] = " Tên Tài Khoản", ["value"] = player.DisplayName .. " (@" .. player.Name .. ")", ["inline"] = true },
+                    { ["name"] = " User ID", ["value"] = tostring(player.UserId), ["inline"] = true },
                     { ["name"] = "🛠️ Executor", ["value"] = executorName, ["inline"] = true },
-                    { ["name"] = "🎮 Trò Chơi", ["value"] = gameName .. " (" .. tostring(game.PlaceId) .. ")", ["inline"] = false },
-                    { ["name"] = "🔗 Job ID", ["value"] = "`" .. game.JobId .. "`", ["inline"] = false },
-                    { ["name"] = "👑 Script Owner", ["value"] = "Cooki_Hieu", ["inline"] = true }
+                    { ["name"] = " Trò Chơi", ["value"] = gameName .. " (" .. tostring(game.PlaceId) .. ")", ["inline"] = false },
+                    { ["name"] = " Job ID", ["value"] = "`" .. game.JobId .. "`", ["inline"] = false },
+                    { ["name"] = " Script Owner", ["value"] = "Cooki_Hieu", ["inline"] = true }
                 },
                 ["footer"] = { 
                     ["text"] = "Execution Logger • " .. os.date("%X"),
