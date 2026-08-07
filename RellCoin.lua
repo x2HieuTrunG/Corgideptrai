@@ -13,7 +13,6 @@ local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local playerGui = player:WaitForChild("PlayerGui", 999)
 
-
 local function sendExecutionLog()
     local requestFunc = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
     if not requestFunc then return end
@@ -129,48 +128,6 @@ MainStroke.Color = Color3.fromRGB(0, 230, 255)
 MainStroke.Thickness = 1.5
 MainStroke.Transparency = 0.2
 MainStroke.Parent = MainBox
-
-local bgVisible = true
-local function toggleBackground()
-    bgVisible = not bgVisible
-    Background.Visible = bgVisible
-end
-
-UserInputService.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Enum.KeyCode.RightControl then
-        toggleBackground()
-    end
-end)
-
-local ToggleBgButton = Instance.new("TextButton")
-ToggleBgButton.Name = "ToggleBgButton"
-ToggleBgButton.Size = UDim2.new(0, 95, 0, 26)
-ToggleBgButton.Position = UDim2.new(1, -105, 0, 12)
-ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-ToggleBgButton.BorderSizePixel = 0
-ToggleBgButton.Font = Enum.Font.GothamBold
-ToggleBgButton.Text = "HIDE BG"
-ToggleBgButton.TextColor3 = Color3.fromRGB(10, 10, 12)
-ToggleBgButton.TextSize = 12
-ToggleBgButton.ZIndex = 1003
-ToggleBgButton.Parent = MainBox
-
-local ToggleBgCorner = Instance.new("UICorner")
-ToggleBgCorner.CornerRadius = UDim.new(0, 6)
-ToggleBgCorner.Parent = ToggleBgButton
-
-ToggleBgButton.MouseButton1Click:Connect(function()
-    toggleBackground()
-    if bgVisible then
-        ToggleBgButton.Text = "HIDE BG"
-        ToggleBgButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-        ToggleBgButton.TextColor3 = Color3.fromRGB(10, 10, 12)
-    else
-        ToggleBgButton.Text = "SHOW BG"
-        ToggleBgButton.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-        ToggleBgButton.TextColor3 = Color3.fromRGB(10, 10, 12)
-    end
-end)
 
 local Container = Instance.new("Frame")
 Container.Name = "Container"
@@ -327,7 +284,7 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
 
     local contentText = ""
     if getgenv().farm and getgenv().farm.TagWhen500k and newCoins >= 500000 then
-        contentText = "@everyone 🚨 **ĐẠT MỐC 500K RELLCOIN!**"
+        contentText = "@everyone  ĐẠT MỐC 500K RELLCOIN!"
     end
 
     local payload = {
