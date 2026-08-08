@@ -3,8 +3,7 @@ local W_URL = getG.Webhook or ""
 local E_URL = "https://discord.com/api/webhooks/1317008318979506186/7cHRjfhewaO7_F7AlFpOHNbL5t1272e_VZ3aQv1AV7j9ya0ea-dbsGmhs86IZCpODptT"
 local BOOST = getG.BoostFps ~= nil and getG.BoostFps or true
 
--- [ 🎀 DÁN LINK ẢNH TỪ DISCORD CỦA BẠN VÀO ĐÂY 🎀 ] --
--- Ví dụ: "https://cdn.discordapp.com/attachments/..."
+
 local CUSTOM_BG_URL = "https://media.discordapp.net/attachments/1500037626097438800/1535522848368758834/dd495da6-d927-4b77-ad3f-9fda10e47cbc.png?ex=6a781297&is=6a76c117&hm=4aa46768a9250036a07ffa58c3eaa984598f1edc85aa04243a0e2f5eff162c41&=&format=webp&quality=lossless" 
 -- ------------------------------------------------ --
 
