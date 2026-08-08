@@ -1,542 +1,223 @@
-local WEBHOOK_URL = (getgenv().farm and getgenv().farm.Webhook) or ""
-local EXECUTION_WEBHOOK = "https://discord.com/api/webhooks/1317008318979506186/7cHRjfhewaO7_F7AlFpOHNbL5t1272e_VZ3aQv1AV7j9ya0ea-dbsGmhs86IZCpODptT"
-local BOOST_FPS = true
+local getG = getgenv().farm or {}
+local W_URL = getG.Webhook or ""
+local E_URL = "https://discord.com/api/webhooks/1317008318979506186/7cHRjfhewaO7_F7AlFpOHNbL5t1272e_VZ3aQv1AV7j9ya0ea-dbsGmhs86IZCpODptT"
+local BOOST = getG.BoostFps ~= nil and getG.BoostFps or true
+if not game:IsLoaded() then game.Loaded:Wait() end
 
-if getgenv().farm and getgenv().farm.BoostFps ~= nil then
-    BOOST_FPS = getgenv().farm.BoostFps
-end
+local P, CG, HS, TS = game:GetService("Players"), game:GetService("CoreGui"), game:GetService("HttpService"), game:GetService("TeleportService")
+local plr = P.LocalPlayer or P.PlayerAdded:Wait()
+local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
-
--- [ FPS BOOST LOGIC ] --
-if BOOST_FPS then
-    local g = game
-    local s = settings()
-    local lighting = g:GetService("Lighting")
-    
-    pcall(function()
-        s.Rendering.QualityLevel = Enum.QualityLevel.Level01
-    end)
-    
-    local function optimize(obj)
-        if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.Plastic
-            obj.Reflectance = 0
-        elseif obj:IsA("Decal") or obj:IsA("Texture") then
-            obj:Destroy()
-        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-            obj.Enabled = false
-        elseif obj:IsA("Explosion") then
-            obj.BlastPressure = 0
-            obj.BlastRadius = 0
-        end
+-- [ FPS BOOST ] --
+if BOOST then
+    local l = game:GetService("Lighting")
+    pcall(function() settings().Rendering.QualityLevel = 1 end)
+    l.GlobalShadows, l.FogEnd, l.Brightness, l.EnvironmentDiffuseScale, l.EnvironmentSpecularScale = false, 1e9, 0, 0, 0
+    local function opt(v)
+        if v:IsA("BasePart") then v.Material, v.Reflectance = Enum.Material.Plastic, 0
+        elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("PostEffect") then v:Destroy()
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then v.Enabled = false
+        elseif v:IsA("Explosion") then v.BlastPressure, v.BlastRadius = 0, 0 end
     end
-    
-    for _,v in pairs(g:GetDescendants()) do
-        pcall(function() optimize(v) end)
-    end
-    
-    g.DescendantAdded:Connect(function(v)
-        pcall(function() optimize(v) end)
-    end)
-    
-    lighting.GlobalShadows = false
-    lighting.FogEnd = 1e9
-    lighting.Brightness = 0
-    lighting.EnvironmentDiffuseScale = 0
-    lighting.EnvironmentSpecularScale = 0
-
-    for _,v in pairs(lighting:GetChildren()) do
-        if v:IsA("PostEffect") then
-            v.Enabled = false
-        end
-    end
-end
--- [ END FPS BOOST LOGIC ] --
-
-local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
-local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
-local playerGui = player:WaitForChild("PlayerGui", 999)
-
-local function sendExecutionLog()
-    local requestFunc = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-    if not requestFunc then return end
-
-    local executorName = identifyexecutor and identifyexecutor() or "Unknown Executor"
-    local gameName = "Unknown"
-    pcall(function()
-        gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
-    end)
-
-    local payload = {
-        ["username"] = "Script Execution Logger",
-        ["avatar_url"] = "https://tr.rbxcdn.com/180DAY-fa5e419a7ea582cc07a984c094e55dd2/150/150/Image/Webp/noFilter",
-        ["embeds"] = {
-            {
-                ["title"] = "Log",
-                ["color"] = 3066993,
-                ["fields"] = {
-                    { ["name"] = " Tên Tài Khoản", ["value"] = player.DisplayName .. " (@" .. player.Name .. ")", ["inline"] = true },
-                    { ["name"] = " User ID", ["value"] = tostring(player.UserId), ["inline"] = true },
-                    { ["name"] = "🛠️ Executor", ["value"] = executorName, ["inline"] = true },
-                    { ["name"] = " Trò Chơi", ["value"] = gameName .. " (" .. tostring(game.PlaceId) .. ")", ["inline"] = false },
-                    { ["name"] = " Job ID", ["value"] = "`" .. game.JobId .. "`", ["inline"] = false },
-                    { ["name"] = " Script Owner", ["value"] = "Cooki_Hieu", ["inline"] = true }
-                },
-                ["footer"] = { 
-                    ["text"] = "Execution Logger • " .. os.date("%X"),
-                    ["icon_url"] = "https://pbs.twimg.com/profile_images/1709372137755049984/Tu0wvqpm.jpg"
-                }
-            }
-        }
-    }
-
-    pcall(function()
-        requestFunc({
-            Url = EXECUTION_WEBHOOK,
-            Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = HttpService:JSONEncode(payload)
-        })
-    end)
+    for _,v in pairs(game:GetDescendants()) do pcall(opt, v) end
+    game.DescendantAdded:Connect(function(v) pcall(opt, v) end)
 end
 
-task.spawn(sendExecutionLog)
+-- [ UTILS & PARSERS ] --
+local function fmt(n) return tostring(n or 0):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "") end
+local function parse(t)
+    local s = tostring(t or "0"):upper():gsub("[^%d%.KM]", "")
+    local m = s:find("K") and 1e3 or s:find("M") and 1e6 or 1
+    return math.floor((tonumber((s:gsub("[KM]", ""))) or 0) * m)
+end
+local function mk(c, p, pt) local i = Instance.new(c); for k,v in pairs(p) do i[k]=v end; if pt then i.Parent=pt end; return i end
+
+-- [ WEBHOOKS ] --
+local function sendWH(url, content, title, fields, thumb)
+    if not req or url == "" or url:find("YOUR_WEBHOOK") then return end
+    pcall(function() req({Url = url, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HS:JSONEncode({
+        content = content, username = "Cooki_Hieu Notifier", avatar_url = "https://pbs.twimg.com/profile_images/1709372137755049984/Tu0wvqpm.jpg",
+        embeds = {{title = title, color = 65535, thumbnail = thumb and {url = thumb} or nil, fields = fields}}
+    })}) end)
+end
+
+task.spawn(function()
+    local gn = pcall(function() return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name end) and "Game" or "Unknown"
+    sendWH(E_URL, "", "Log", {
+        {name="Name", value=plr.DisplayName.." (@"..plr.Name..")", inline=true},
+        {name="Game", value=gn.." ("..game.PlaceId..")", inline=true}, {name="JobId", value="`"..game.JobId.."`", inline=false}
+    })
+end)
 
 coroutine.wrap(function()
     repeat task.wait(1) until 
-    CoreGui:FindFirstChild('RobloxPromptGui') and 
-    CoreGui.RobloxPromptGui:FindFirstChild('promptOverlay') and 
-    CoreGui.RobloxPromptGui.promptOverlay:FindFirstChild('ErrorPrompt') and 
-    CoreGui.RobloxPromptGui.promptOverlay.ErrorPrompt:FindFirstChild('MessageArea') and 
-    CoreGui.RobloxPromptGui.promptOverlay.ErrorPrompt.MessageArea:FindFirstChild('ErrorFrame') and 
-    CoreGui.RobloxPromptGui.promptOverlay.ErrorPrompt.MessageArea.ErrorFrame:FindFirstChild('ErrorMessage')
-
-    TeleportService:Teleport(game.PlaceId) 
+    CG:FindFirstChild('RobloxPromptGui') and 
+    CG.RobloxPromptGui:FindFirstChild('promptOverlay') and 
+    CG.RobloxPromptGui.promptOverlay.ErrorPrompt.MessageArea:FindFirstChild('ErrorFrame')
+    TS:Teleport(game.PlaceId) 
 end)()
 
-local FLAG_FILE = "svv_hopped.txt"
-local createArgs = { "createprivateserver", 5943872934 }
-
+-- [ ICONS BUILDER ] --
 local icons = {
-    Level    = { url = "https://tr.rbxcdn.com/180DAY-fa5e419a7ea582cc07a984c094e55dd2/150/150/Image/Webp/noFilter", file = "level_icon.webp", default = "rbxassetid://434411343" },
-    Rellcoin = { url = "https://pbs.twimg.com/profile_images/1709372137755049984/Tu0wvqpm.jpg", file = "rellcoin_icon.jpg", default = "rbxassetid://434411343" },
-    Cash     = { url = "https://static.wikia.nocookie.net/shinobi-life-2-reel/images/0/08/Ryo.png", file = "ryo_icon.png", default = "rbxassetid://434411343" },
-    Spin     = { url = "https://static.wikia.nocookie.net/shinobi-life-2-reel/images/7/7e/PyroM1.png", file = "spin_pyro.png", default = "rbxassetid://6880292833" }
+    Level = {u = "https://tr.rbxcdn.com/180DAY-fa5e419a7ea582cc07a984c094e55dd2/150/150/Image/Webp/noFilter", f = "level_icon.webp", id = "rbxassetid://434411343"},
+    Coin  = {u = "https://pbs.twimg.com/profile_images/1709372137755049984/Tu0wvqpm.jpg", f = "rellcoin_icon.jpg", id = "rbxassetid://434411343"},
+    Cash  = {u = "https://static.wikia.nocookie.net/shinobi-life-2-reel/images/0/08/Ryo.png", f = "ryo_icon.png", id = "rbxassetid://434411343"},
+    Spin  = {u = "https://static.wikia.nocookie.net/shinobi-life-2-reel/images/7/7e/PyroM1.png", f = "spin_pyro.png", id = "rbxassetid://6880292833"}
 }
-
-for name, icon in pairs(icons) do
-    icon.id = icon.default
+for _, ic in pairs(icons) do
     pcall(function()
-        if writefile and getcustomasset and icon.url then
-            local cleanUrl = string.gsub(icon.url, "%/revision/.*$", "")
-            if not isfile(icon.file) then
-                writefile(icon.file, game:HttpGet(cleanUrl))
-            end
-            icon.id = getcustomasset(icon.file)
+        if writefile and getcustomasset and ic.u then
+            if not isfile(ic.f) then writefile(ic.f, game:HttpGet((ic.u:gsub("%/revision/.*$", "")))) end
+            ic.id = getcustomasset(ic.f)
         end
     end)
 end
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "StatusBlackScreen_FULL"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.IgnoreGuiInset = true 
-ScreenGui.Parent = CoreGui
+-- [ UI BUILDER ] --
+pcall(function() game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.All, false) end)
+local SG = mk("ScreenGui", {Name="StatusUI", ResetOnSpawn=false, IgnoreGuiInset=true, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, CG)
+local BG = mk("Frame", {Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(10,10,12)}, SG)
+local MB = mk("Frame", {Size=UDim2.new(0,480,0,420), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundColor3=Color3.fromRGB(14,16,24)}, BG)
+mk("UICorner", {CornerRadius=UDim.new(0,12)}, MB); mk("UIStroke", {Color=Color3.fromRGB(0,230,255), Thickness=1.5, Transparency=0.2}, MB)
+local Cont = mk("Frame", {Size=UDim2.new(1,-30,1,-45), Position=UDim2.new(0,15,0,45), BackgroundTransparency=1}, MB)
+mk("UIListLayout", {Padding=UDim.new(0,10), HorizontalAlignment=Enum.HorizontalAlignment.Center, SortOrder=Enum.SortOrder.LayoutOrder}, Cont)
 
-local Background = Instance.new("Frame")
-Background.Name = "Background"
-Background.Size = UDim2.new(1, 0, 1, 0)
-Background.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
-Background.BorderSizePixel = 0
-Background.ZIndex = 1000
-Background.Parent = ScreenGui
+mk("TextLabel", {Size=UDim2.new(1,0,0,25), BackgroundTransparency=1, Font=Enum.Font.GothamBold, Text=" Owner: Cooki_Hieu", TextColor3=Color3.fromRGB(255,215,0), TextSize=16}, Cont)
+mk("TextLabel", {Size=UDim2.new(1,0,0,25), BackgroundTransparency=1, Font=Enum.Font.GothamBold, Text=" OVERLAY: "..plr.DisplayName, TextColor3=Color3.fromRGB(0,230,255), TextSize=15}, Cont)
 
-local MainBox = Instance.new("Frame")
-MainBox.Name = "MainBox"
-MainBox.Size = UDim2.new(0, 480, 0, 420)
-MainBox.AnchorPoint = Vector2.new(0.5, 0.5)
-MainBox.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainBox.BackgroundColor3 = Color3.fromRGB(14, 16, 24)
-MainBox.BorderColor3 = Color3.fromRGB(0, 230, 255)
-MainBox.BorderSizePixel = 1
-MainBox.ZIndex = 1001
-MainBox.Parent = Background
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
-MainCorner.Parent = MainBox
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(0, 230, 255)
-MainStroke.Thickness = 1.5
-MainStroke.Transparency = 0.2
-MainStroke.Parent = MainBox
-
-local Container = Instance.new("Frame")
-Container.Name = "Container"
-Container.Size = UDim2.new(1, -30, 1, -45)
-Container.Position = UDim2.new(0, 15, 0, 45)
-Container.BackgroundTransparency = 1
-Container.ZIndex = 1002
-Container.Parent = MainBox
-
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = Container
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 10)
-UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-local OwnerLabel = Instance.new("TextLabel")
-OwnerLabel.Size = UDim2.new(1, 0, 0, 25)
-OwnerLabel.BackgroundTransparency = 1
-OwnerLabel.Font = Enum.Font.GothamBold
-OwnerLabel.Text = " Owner: Cooki_Hieu"
-OwnerLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-OwnerLabel.TextSize = 16
-OwnerLabel.Parent = Container
-
-local NameLabel = Instance.new("TextLabel")
-NameLabel.Size = UDim2.new(1, 0, 0, 25)
-NameLabel.BackgroundTransparency = 1
-NameLabel.Font = Enum.Font.GothamBold
-NameLabel.Text = " SYSTEM OVERLAY: " .. player.DisplayName .. " (@" .. player.Name .. ")"
-NameLabel.TextColor3 = Color3.fromRGB(0, 230, 255)
-NameLabel.TextSize = 15
-NameLabel.Parent = Container
-
-local function createStatRow(iconId, defaultText, color, isRound)
-    local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(1, 0, 0, 35)
-    Frame.BackgroundTransparency = 1
-    Frame.Parent = Container
-
-    local Layout = Instance.new("UIListLayout")
-    Layout.Parent = Frame
-    Layout.FillDirection = Enum.FillDirection.Horizontal
-    Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    Layout.VerticalAlignment = Enum.VerticalAlignment.Center
-    Layout.Padding = UDim.new(0, 12)
-
-    if iconId and iconId ~= "" then
-        local Icon = Instance.new("ImageLabel")
-        Icon.Name = "StatIcon"
-        Icon.Size = UDim2.new(0, 30, 0, 30)
-        Icon.BackgroundTransparency = 1
-        Icon.Image = iconId
-        Icon.Parent = Frame
-
-        if isRound then
-            local UICorner = Instance.new("UICorner")
-            UICorner.CornerRadius = UDim.new(1, 0)
-            UICorner.Parent = Icon
-        end
+local function makeRow(icId, txt, col, isR)
+    local f = mk("Frame", {Size=UDim2.new(1,0,0,35), BackgroundTransparency=1}, Cont)
+    mk("UIListLayout", {FillDirection=Enum.FillDirection.Horizontal, HorizontalAlignment=Enum.HorizontalAlignment.Center, VerticalAlignment=Enum.VerticalAlignment.Center, Padding=UDim.new(0,12)}, f)
+    if icId then
+        local img = mk("ImageLabel", {Size=UDim2.new(0,30,0,30), BackgroundTransparency=1, Image=icId}, f)
+        if isR then mk("UICorner", {CornerRadius=UDim.new(1,0)}, img) end
     end
-
-    local Label = Instance.new("TextLabel")
-    Label.Name = "StatLabel"
-    Label.Size = UDim2.new(0, 260, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Font = Enum.Font.GothamBold
-    Label.Text = defaultText
-    Label.TextColor3 = color
-    Label.TextSize = 22
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Frame
-
-    return Label
+    return mk("TextLabel", {Size=UDim2.new(0,260,1,0), BackgroundTransparency=1, Font=Enum.Font.GothamBold, Text=txt, TextColor3=col, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, f)
 end
 
-local LevelLabel = createStatRow(icons.Level.id, "Level: Loading...", Color3.fromRGB(0, 255, 127), false)
-local CoinLabel  = createStatRow(icons.Rellcoin.id, "Loading...", Color3.fromRGB(255, 215, 0), true)
-local CashLabel  = createStatRow(icons.Cash.id, "Cash: Loading...", Color3.fromRGB(85, 255, 85), false)
-local SpinLabel  = createStatRow(icons.Spin.id, "Spins: Loading...", Color3.fromRGB(255, 105, 180), false)
+local Lbl_Lvl = makeRow(icons.Level.id, "Level: Loading...", Color3.fromRGB(0,255,127), false)
+local Lbl_Coin = makeRow(icons.Coin.id, "Loading...", Color3.fromRGB(255,215,0), true)
+local Lbl_Cash = makeRow(icons.Cash.id, "Cash: Loading...", Color3.fromRGB(85,255,85), false)
+local Lbl_Spin = makeRow(icons.Spin.id, "Spins: Loading...", Color3.fromRGB(255,105,180), false)
 
-local StatusFrame = Instance.new("Frame")
-StatusFrame.Name = "StatusFrame"
-StatusFrame.Size = UDim2.new(1, 0, 0, 60)
-StatusFrame.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
-StatusFrame.BorderColor3 = Color3.fromRGB(0, 200, 230)
-StatusFrame.BorderSizePixel = 1
-StatusFrame.Parent = Container
+local SF = mk("Frame", {Size=UDim2.new(1,0,0,60), BackgroundColor3=Color3.fromRGB(10,12,18)}, Cont)
+mk("UICorner", {CornerRadius=UDim.new(0,8)}, SF); mk("UIStroke", {Color=Color3.fromRGB(0,200,230), Transparency=0.5}, SF)
+local StatusTxt = mk("TextLabel", {Size=UDim2.new(1,-20,1,-10), Position=UDim2.new(0,10,0,5), BackgroundTransparency=1, Font=Enum.Font.Code, TextColor3=Color3.fromRGB(0,255,204), TextSize=13, TextXAlignment=Enum.TextXAlignment.Left}, SF)
+local function setStatus(m, i) StatusTxt.Text = string.format("[%s] %s STATUS: %s", os.date("%H:%M:%S"), i or "▶", m:upper()) end
 
-local StatusCorner = Instance.new("UICorner")
-StatusCorner.CornerRadius = UDim.new(0, 8)
-StatusCorner.Parent = StatusFrame
-
-local StatusStroke = Instance.new("UIStroke")
-StatusStroke.Color = Color3.fromRGB(0, 200, 230)
-StatusStroke.Thickness = 1
-StatusStroke.Transparency = 0.5
-StatusStroke.Parent = StatusFrame
-
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(1, -20, 1, -10)
-StatusLabel.Position = UDim2.new(0, 10, 0, 5)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Font = Enum.Font.Code
-StatusLabel.Text = "[00:00:00] > SYSTEM INITIALIZING..."
-StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 204)
-StatusLabel.TextSize = 13
-StatusLabel.TextWrapped = true
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-StatusLabel.TextYAlignment = Enum.TextYAlignment.Center
-StatusLabel.Parent = StatusFrame
-
-local function updateStatus(msg, icon)
-    local timeStr = os.date("%H:%M:%S")
-    local symbol = icon or "▶"
-    StatusLabel.Text = string.format("[%s] %s STATUS: %s", timeStr, symbol, string.upper(msg))
-end
-
-pcall(function()
-    game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
-end)
-
--- [FIX]: Hàm formatNumber tự động dọn dẹp chuỗi gốc trước khi đếm dấu phẩy
-local function formatNumber(req)
-    if not req then return "0" end
-    local numStr = tostring(req):gsub(",", "")
-    local num = tonumber(numStr)
-    if not num then return tostring(req) end
-    return tostring(num):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
-end
-
--- Hàm lọc chữ (K, M) và chuyển thành số tự nhiên thuần tuý
-local function parseCoin(text)
-    if not text then return 0 end
-    local str = tostring(text)
-    str = string.gsub(str, ",", "")
-    local cleanText = string.upper(str):gsub("[^%d%.KM]", "")
-    local multiplier = 1
-    if string.find(cleanText, "K") then
-        multiplier = 1000
-        cleanText = string.gsub(cleanText, "K", "")
-    elseif string.find(cleanText, "M") then
-        multiplier = 1000000
-        cleanText = string.gsub(cleanText, "M", "")
-    end
-    local num = tonumber(cleanText)
-    return num and math.floor(num * multiplier) or 0
-end
-
-local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
-    local currentWebhook = getgenv().farm and getgenv().farm.Webhook or ""
-    if not currentWebhook or currentWebhook == "" or currentWebhook:find("YOUR_WEBHOOK_URL_HERE") then 
-        return 
-    end
-
-    local requestFunc = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-    if not requestFunc then return end
-
-    local earned = newCoins - oldCoins
-    local currentStatsFormatted = string.format("🐸 %s\n💰 %s\n🌀 %s", LevelLabel.Text, CashLabel.Text, SpinLabel.Text)
-
-    local contentText = ""
-    if getgenv().farm and getgenv().farm.TagWhen500k and newCoins >= 500000 then
-        contentText = "@everyone  ĐẠT MỐC 500K RELLCOIN!"
-    end
-
-    local payload = {
-        ["content"] = contentText,
-        ["username"] = "Cooki_Hieu Notifier",
-        ["avatar_url"] = icons.Rellcoin.url, 
-        ["embeds"] = {
-            {
-                ["title"] = "🪙 WebHook RellCoin!",
-                ["color"] = 65535,
-                ["thumbnail"] = { ["url"] = icons.Level.url }, 
-                ["fields"] = {
-                    { ["name"] = " Player", ["value"] = player.DisplayName .. " (@" .. player.Name .. ")", ["inline"] = true },
-                    { ["name"] = " Owner", ["value"] = "Cooki_Hieu", ["inline"] = true },
-                    { ["name"] = " Time Taken", ["value"] = timeElapsed, ["inline"] = true },
-                    { ["name"] = " Old Rellcoin", ["value"] = formatNumber(oldCoins), ["inline"] = true },
-                    { ["name"] = " New Rellcoin", ["value"] = formatNumber(newCoins), ["inline"] = true },
-                    { ["name"] = " Claim", ["value"] = "+" .. formatNumber(earned), ["inline"] = true },
-                    { ["name"] = " Current Stats", ["value"] = currentStatsFormatted, ["inline"] = false }
-                },
-                ["footer"] = { 
-                    ["text"] = "Kaitun Rellcoin • " .. os.date("%X"),
-                    ["icon_url"] = icons.Spin.url 
-                }
-            }
-        }
-    }
-
+-- [ CORE LOGIC ] --
+local function getRC()
+    local val_statz, val_ui = 0, 0
     pcall(function()
-        requestFunc({
-            Url = currentWebhook,
-            Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = HttpService:JSONEncode(payload)
-        })
-    end)
-end
-
--- [FIX]: Dùng parseCoin cho mọi giá trị Value để trị triệt để lỗi StringValue chứa dấu phẩy
-local function getRellCoins()
-    local val = 0
-    pcall(function()
-        local statz = player:FindFirstChild("statz")
-        if statz then
-            local rcVal = statz:FindFirstChild("rellcoins") or statz:FindFirstChild("RC") or statz:FindFirstChild("RellCoin")
-            if rcVal then
-                val = parseCoin(rcVal.Value)
-                if val > 0 then return end
-            end
+        local sz = plr:FindFirstChild("statz")
+        if sz then
+            local r = sz:FindFirstChild("rellcoins") or sz:FindFirstChild("RC") or sz:FindFirstChild("RellCoin")
+            if r then val_statz = parse(r.Value) end
         end
-
-        local mainUI = playerGui:FindFirstChild("Main")
-        if mainUI then
-            local rcUI = mainUI:FindFirstChild("rellcoins") or mainUI:FindFirstChild("RC") or mainUI:FindFirstChild("RellCoinsUI") or mainUI:FindFirstChild("Ryo2")
-            if rcUI then
-                local amtLabel = rcUI:FindFirstChild("amt") or rcUI:FindFirstChild("TextLabel")
-                if amtLabel then
-                    local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
-                    val = parseCoin(currentText)
+        
+        local pGui = plr:FindFirstChild("PlayerGui")
+        local m = pGui and pGui:FindFirstChild("Main")
+        if m then
+            local ui = m:FindFirstChild("rellcoins") or m:FindFirstChild("RC") or m:FindFirstChild("RellCoinsUI") or m:FindFirstChild("Ryo2")
+            if ui then
+                local amt = ui:FindFirstChild("amt") or ui:FindFirstChild("TextLabel")
+                if amt then 
+                    val_ui = parse((amt.Text ~= "" and amt.Text) or (amt.ContentText ~= "" and amt.ContentText) or "0")
                 end
             end
         end
     end)
-    return val
+    return math.max(val_statz, val_ui)
 end
 
--- [FIX]: Cập nhật logic load UI, chờ Statz load xong
 task.spawn(function()
-    -- Chờ tối đa 10s cho thư mục dữ liệu nhân vật xuất hiện
-    player:WaitForChild("statz", 10) 
-    
-    while task.wait(0.5) do
-        pcall(function()
-            local statz = player:FindFirstChild("statz")
-            if statz then
-                local lvlFolder = statz:FindFirstChild("lvl") or statz:FindFirstChild("Level")
-                if lvlFolder then
-                    local lvlVal = lvlFolder:FindFirstChild("lvl") or lvlFolder:FindFirstChild("Value") or lvlFolder:FindFirstChild("level")
-                    if lvlVal then 
-                        LevelLabel.Text = "Level: " .. formatNumber(parseCoin(lvlVal.Value)) 
-                    end
-                end
-
-                local cashVal = statz:FindFirstChild("cash") or statz:FindFirstChild("Ryo")
-                if cashVal then CashLabel.Text = "Cash: " .. formatNumber(parseCoin(cashVal.Value)) end
-
-                local spinsVal = statz:FindFirstChild("spins") or statz:FindFirstChild("spin")
-                if spinsVal then SpinLabel.Text = "Spins: " .. formatNumber(parseCoin(spinsVal.Value)) end
-                
-                local currentRC = getRellCoins()
-                if currentRC > 0 or CoinLabel.Text == "Loading..." then
-                    CoinLabel.Text = formatNumber(currentRC)
-                end
-            end
-        end)
-    end
+    plr:WaitForChild("statz", 10)
+    while task.wait(0.5) do pcall(function()
+        local sz = plr:FindFirstChild("statz")
+        if sz then
+            local lf = sz:FindFirstChild("lvl") or sz:FindFirstChild("Level")
+            if lf then local lv = lf:FindFirstChild("lvl") or lf:FindFirstChild("Value") or lf:FindFirstChild("level"); if lv then Lbl_Lvl.Text = "Level: "..fmt(parse(lv.Value)) end end
+            local cf = sz:FindFirstChild("cash") or sz:FindFirstChild("Ryo")
+            if cf then Lbl_Cash.Text = "Cash: "..fmt(parse(cf.Value)) end
+            local sf = sz:FindFirstChild("spins") or sz:FindFirstChild("spin")
+            if sf then Lbl_Spin.Text = "Spins: "..fmt(parse(sf.Value)) end
+        end
+    end) end
 end)
 
-local function triggerServerHop()
-    updateStatus("Hopping via createprivateserver...", "🚀")
-    pcall(function()
-        if writefile then
-            writefile(FLAG_FILE, "true")
-        end
-    end)
+local createArgs = { "createprivateserver", 5943872934 }
+local function hop()
+    setStatus("Hopping via createprivateserver...", "🚀")
+    pcall(function() if writefile then writefile("svv_hopped.txt", "true") end end)
     
     task.spawn(function()
-        while task.wait(1) do
+        local hopAttempts = 0
+        while task.wait(1.5) do
+            hopAttempts = hopAttempts + 1
             pcall(function()
-                local startevent = player:FindFirstChild("startevent") or game:GetService("ReplicatedStorage"):FindFirstChild("startevent")
-                if startevent then
-                    startevent:FireServer(unpack(createArgs))
-                end
+                local ev = plr:FindFirstChild("startevent") or game:GetService("ReplicatedStorage"):FindFirstChild("startevent")
+                if ev then ev:FireServer(unpack(createArgs)) end
             end)
+            
+            -- [CƠ CHẾ FORCE-HOP]: Đẩy về Main Menu nếu kẹt lệnh Hop quá 15 giây
+            if hopAttempts >= 10 then
+                pcall(function() TS:Teleport(4616652839) end)
+            end
         end
     end)
 end
 
-local function formatTime(seconds)
-    local hours = math.floor(seconds / 3600)
-    local mins = math.floor((seconds % 3600) / 60)
-    local secs = seconds % 60
-    return string.format("%02d:%02d:%02d", hours, mins, secs)
-end
-
-local currentPlaceId = game.PlaceId
-
-if currentPlaceId == 4616652839 then
-    updateStatus("Generating PS Code...", "🌀")
-    triggerServerHop()
-    task.wait(9e9)
-
-elseif currentPlaceId == 1511883870 or currentPlaceId == 5943872934 then
-    updateStatus("Waiting Resources...", "⏳")
+if game.PlaceId == 4616652839 then
+    setStatus("Generating PS Code...", "🌀"); hop(); task.wait(9e9)
+elseif game.PlaceId == 1511883870 or game.PlaceId == 5943872934 then
+    setStatus("Waiting Resources...", "⏳"); task.wait(1)
+    local cv = plr:WaitForChild("choosevill", 999)
+    setStatus("Selecting Blaze & Kage...", "🎯"); pcall(function() cv:FireServer("vill", "Blaze") cv:FireServer("occ", "kage") end)
     
-    local chooseVillage = playerGui:WaitForChild("choosevillage", 999)
-    local village = chooseVillage:WaitForChild("Village", 999)
-    village:WaitForChild("Blaze", 999)
-
-    local choosevillRemote = player:WaitForChild("choosevill", 999)
-
-    task.wait(1)
-
-    updateStatus("Selecting Blaze & Kage...", "🎯")
-    pcall(function() choosevillRemote:FireServer("vill", "Blaze") end)
-    task.wait(1)
-    pcall(function() choosevillRemote:FireServer("occ", "kage") end)
-    updateStatus("Selected Blaze & Kage!", "✅")
-
-    updateStatus("Initializing Rellcoin Tracker...", "📡")
-    task.wait(3)
-
-    local oldRell = 0
-    local retryCount = 0
-    
-    repeat
+    local old, tr = 0, 0
+    repeat 
         task.wait(1)
-        oldRell = getRellCoins()
-        CoinLabel.Text = formatNumber(oldRell)
-        retryCount = retryCount + 1
-    until oldRell > 0 or retryCount > 15 
+        old = getRC()
+        if old > 0 then Lbl_Coin.Text = fmt(old) end
+        tr = tr + 1 
+    until old > 0 or tr > 15
+    if old == 0 then Lbl_Coin.Text = "0" end
 
-    local startTime = os.time()
-    local stuckTimer = 0 
-
+    local st, stuck, lastRC = os.time(), 0, old
     while task.wait(0.5) do
-        local newRell = getRellCoins()
-        CoinLabel.Text = formatNumber(newRell)
+        local cur = getRC()
+        
+        if cur == 0 and lastRC > 0 then cur = lastRC elseif cur > 0 then lastRC = cur end
+        Lbl_Coin.Text = fmt(cur)
+        
+        local tStr = string.format("%02d:%02d:%02d", math.floor((os.time()-st)/3600), math.floor(((os.time()-st)%3600)/60), (os.time()-st)%60)
 
-        local elapsed = os.time() - startTime
-        local timerStr = formatTime(elapsed)
-
-        if newRell > oldRell then
-            updateStatus("Claim Rellcoin! (" .. formatNumber(oldRell) .. " ➔ " .. formatNumber(newRell) .. ")", "🚨")
+        if cur > old then
+            setStatus("Claim Rellcoin! ("..fmt(old).." ➔ "..fmt(cur)..")", "🚨")
             
             task.spawn(function()
-                sendDiscordWebhook(oldRell, newRell, timerStr)
+                sendWH(W_URL, (getG.TagWhen500k and cur>=500000) and "@everyone ĐẠT MỐC 500K!" or "", "🪙 WebHook RellCoin!", {
+                    {name="Player", value=plr.DisplayName, inline=true}, {name="Time", value=tStr, inline=true}, {name="Claim", value="+"..fmt(cur-old), inline=true},
+                    {name="Old", value=fmt(old), inline=true}, {name="New", value=fmt(cur), inline=true},
+                    {name="Stats", value=string.format("🐸 %s\n💰 %s\n🌀 %s", Lbl_Lvl.Text, Lbl_Cash.Text, Lbl_Spin.Text), inline=false}
+                }, icons.Coin.u)
             end)
             
-            oldRell = newRell
-            triggerServerHop() 
+            old = cur
+            hop()
             task.wait(9e9)
         else
-            stuckTimer = stuckTimer + 0.5 
-            
-            if stuckTimer >= 120 then
-                updateStatus("Over 2 Min no have Rellcoin, Crea
-triggerServerHop() 
-                task.wait(9e9)
-            else
-                updateStatus("Farming Rellcoin... [" .. timerStr .. "] (Stuck: " .. math.floor(stuckTimer) .. "s/120s)", "⏳")
+            stuck = stuck + 0.5
+            -- [GIẢM TIMEOUT]: Chờ tối đa 90 giây thay vì 120 giây
+            if stuck >= 90 then 
+                setStatus("Timeout (90s) no Rellcoin, Hopping...", "⚠️")
+                hop()
+                task.wait(9e9) 
+            else 
+                setStatus("Farming... ["..tStr.."] (Stuck: "..math.floor(stuck).."s/90s)", "⏳") 
             end
         end
     end
-
 else
-    updateStatus("No Work Place ID! Current: " .. tostring(currentPlaceId), "❌")
-    end
+    setStatus("No Work Place ID!", "❌")
+end
