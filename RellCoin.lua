@@ -10,7 +10,7 @@ if not game:IsLoaded() then
     game.Loaded:Wait()
 end
 
--- fps 
+-- [ FPS BOOST LOGIC ] --
 if BOOST_FPS then
     local g = game
     local s = settings()
@@ -300,10 +300,16 @@ pcall(function()
     game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
 end)
 
+-- [FIX]: Hàm formatNumber tự động dọn dẹp chuỗi gốc trước khi đếm dấu phẩy
 local function formatNumber(req)
-    return tostring(req):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+    if not req then return "0" end
+    local numStr = tostring(req):gsub(",", "")
+    local num = tonumber(numStr)
+    if not num then return tostring(req) end
+    return tostring(num):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
 end
 
+-- Hàm lọc chữ (K, M) và chuyển thành số tự nhiên thuần tuý
 local function parseCoin(text)
     if not text then return 0 end
     local str = tostring(text)
@@ -374,26 +380,24 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
     end)
 end
 
--- [ĐÃ FIX]: Cập nhật hàm lấy RellCoin để kiểm tra nhiều đường dẫn chuẩn xác hơn
+-- [FIX]: Dùng parseCoin cho mọi giá trị Value để trị triệt để lỗi StringValue chứa dấu phẩy
 local function getRellCoins()
     local val = 0
     pcall(function()
-        -- 1. Ưu tiên lấy từ Folder Statz (dữ liệu thật của player)
         local statz = player:FindFirstChild("statz")
         if statz then
             local rcVal = statz:FindFirstChild("rellcoins") or statz:FindFirstChild("RC") or statz:FindFirstChild("RellCoin")
             if rcVal then
-                val = tonumber(rcVal.Value) or 0
-                return
+                val = parseCoin(rcVal.Value)
+                if val > 0 then return end
             end
         end
 
-        -- 2. Lấy dự phòng từ UI nếu không tìm thấy trong Statz
         local mainUI = playerGui:FindFirstChild("Main")
         if mainUI then
-            local rcUI = mainUI:FindFirstChild("RC") or mainUI:FindFirstChild("RellCoin") or mainUI:FindFirstChild("Ryo2")
+            local rcUI = mainUI:FindFirstChild("rellcoins") or mainUI:FindFirstChild("RC") or mainUI:FindFirstChild("RellCoinsUI") or mainUI:FindFirstChild("Ryo2")
             if rcUI then
-                local amtLabel = rcUI:FindFirstChild("amt")
+                local amtLabel = rcUI:FindFirstChild("amt") or rcUI:FindFirstChild("TextLabel")
                 if amtLabel then
                     local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
                     val = parseCoin(currentText)
@@ -404,7 +408,11 @@ local function getRellCoins()
     return val
 end
 
+-- [FIX]: Cập nhật logic load UI, chờ Statz load xong
 task.spawn(function()
+    -- Chờ tối đa 10s cho thư mục dữ liệu nhân vật xuất hiện
+    player:WaitForChild("statz", 10) 
+    
     while task.wait(0.5) do
         pcall(function()
             local statz = player:FindFirstChild("statz")
@@ -413,19 +421,20 @@ task.spawn(function()
                 if lvlFolder then
                     local lvlVal = lvlFolder:FindFirstChild("lvl") or lvlFolder:FindFirstChild("Value") or lvlFolder:FindFirstChild("level")
                     if lvlVal then 
-                        LevelLabel.Text = "Level: " .. formatNumber(lvlVal.Value) 
+                        LevelLabel.Text = "Level: " .. formatNumber(parseCoin(lvlVal.Value)) 
                     end
                 end
 
                 local cashVal = statz:FindFirstChild("cash") or statz:FindFirstChild("Ryo")
-                if cashVal then CashLabel.Text = "Cash: " .. formatNumber(cashVal.Value) end
+                if cashVal then CashLabel.Text = "Cash: " .. formatNumber(parseCoin(cashVal.Value)) end
 
                 local spinsVal = statz:FindFirstChild("spins") or statz:FindFirstChild("spin")
-                if spinsVal then SpinLabel.Text = "Spins: " .. formatNumber(spinsVal.Value) end
+                if spinsVal then SpinLabel.Text = "Spins: " .. formatNumber(parseCoin(spinsVal.Value)) end
                 
-                -- Update Realtime UI cho RellCoin luôn
                 local currentRC = getRellCoins()
-                CoinLabel.Text = formatNumber(currentRC)
+                if currentRC > 0 or CoinLabel.Text == "Loading..." then
+                    CoinLabel.Text = formatNumber(currentRC)
+                end
             end
         end)
     end
@@ -488,7 +497,6 @@ elseif currentPlaceId == 1511883870 or currentPlaceId == 5943872934 then
     local oldRell = 0
     local retryCount = 0
     
-    -- [ĐÃ FIX]: Không để lặp vô tận nếu RC thực sự là 0
     repeat
         task.wait(1)
         oldRell = getRellCoins()
@@ -520,8 +528,8 @@ elseif currentPlaceId == 1511883870 or currentPlaceId == 5943872934 then
             stuckTimer = stuckTimer + 0.5 
             
             if stuckTimer >= 120 then
-                updateStatus("Over 2 Min no have Rellcoin, Create Code", "⚠️")
-                triggerServerHop() 
+                updateStatus("Over 2 Min no have Rellcoin, Crea
+triggerServerHop() 
                 task.wait(9e9)
             else
                 updateStatus("Farming Rellcoin... [" .. timerStr .. "] (Stuck: " .. math.floor(stuckTimer) .. "s/120s)", "⏳")
@@ -531,4 +539,4 @@ elseif currentPlaceId == 1511883870 or currentPlaceId == 5943872934 then
 
 else
     updateStatus("No Work Place ID! Current: " .. tostring(currentPlaceId), "❌")
-end
+    end
