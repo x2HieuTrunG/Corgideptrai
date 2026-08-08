@@ -209,7 +209,7 @@ elseif game.PlaceId == 1511883870 or game.PlaceId == 5943872934 then
         else
             stuck = stuck + 0.5
             -- S
-            if stuck >= 90 then 
+            if stuck >= 120 then 
                 setStatus("Timeout (90s) no Rellcoin, Hopping...", "⚠️")
                 hop()
                 task.wait(9e9) 
