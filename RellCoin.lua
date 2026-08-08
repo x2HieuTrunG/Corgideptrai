@@ -2,6 +2,12 @@ local getG = getgenv().farm or {}
 local W_URL = getG.Webhook or ""
 local E_URL = "https://discord.com/api/webhooks/1317008318979506186/7cHRjfhewaO7_F7AlFpOHNbL5t1272e_VZ3aQv1AV7j9ya0ea-dbsGmhs86IZCpODptT"
 local BOOST = getG.BoostFps ~= nil and getG.BoostFps or true
+
+-- [ 🎀 DÁN LINK ẢNH TỪ DISCORD CỦA BẠN VÀO ĐÂY 🎀 ] --
+-- Ví dụ: "https://cdn.discordapp.com/attachments/..."
+local CUSTOM_BG_URL = "https://media.discordapp.net/attachments/1500037626097438800/1535522848368758834/dd495da6-d927-4b77-ad3f-9fda10e47cbc.png?ex=6a781297&is=6a76c117&hm=4aa46768a9250036a07ffa58c3eaa984598f1edc85aa04243a0e2f5eff162c41&=&format=webp&quality=lossless" 
+-- ------------------------------------------------ --
+
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local P, CG, HS, TS = game:GetService("Players"), game:GetService("CoreGui"), game:GetService("HttpService"), game:GetService("TeleportService")
@@ -37,7 +43,7 @@ local function sendWH(url, content, title, fields, thumb)
     if not req or url == "" or url:find("YOUR_WEBHOOK") then return end
     pcall(function() req({Url = url, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HS:JSONEncode({
         content = content, username = "Cooki_Hieu Notifier", avatar_url = "https://pbs.twimg.com/profile_images/1709372137755049984/Tu0wvqpm.jpg",
-        embeds = {{title = title, color = 65535, thumbnail = thumb and {url = thumb} or nil, fields = fields}}
+        embeds = {{title = title, color = 16738740, thumbnail = thumb and {url = thumb} or nil, fields = fields}}
     })}) end)
 end
 
@@ -57,33 +63,55 @@ coroutine.wrap(function()
     TS:Teleport(game.PlaceId) 
 end)()
 
--- [ ICONS BUILDER ] --
+-- [ AUTO DOWNLOAD SYSTEM ] --
+local bgAssetId = ""
 local icons = {
     Level = {u = "https://tr.rbxcdn.com/180DAY-fa5e419a7ea582cc07a984c094e55dd2/150/150/Image/Webp/noFilter", f = "level_icon.webp", id = "rbxassetid://434411343"},
     Coin  = {u = "https://pbs.twimg.com/profile_images/1709372137755049984/Tu0wvqpm.jpg", f = "rellcoin_icon.jpg", id = "rbxassetid://434411343"},
     Cash  = {u = "https://static.wikia.nocookie.net/shinobi-life-2-reel/images/0/08/Ryo.png", f = "ryo_icon.png", id = "rbxassetid://434411343"},
     Spin  = {u = "https://static.wikia.nocookie.net/shinobi-life-2-reel/images/7/7e/PyroM1.png", f = "spin_pyro.png", id = "rbxassetid://6880292833"}
 }
-for _, ic in pairs(icons) do
-    pcall(function()
-        if writefile and getcustomasset and ic.u then
-            if not isfile(ic.f) then writefile(ic.f, game:HttpGet((ic.u:gsub("%/revision/.*$", "")))) end
-            ic.id = getcustomasset(ic.f)
+
+pcall(function()
+    if getcustomasset and writefile then
+        -- 1. Tự động tải hình nền từ link Discord (Không bao giờ bị lỗi)
+        if CUSTOM_BG_URL ~= "" then
+            if not isfile("cute_bg_auto.jpg") then 
+                writefile("cute_bg_auto.jpg", game:HttpGet(CUSTOM_BG_URL)) 
+            end
+            bgAssetId = getcustomasset("cute_bg_auto.jpg")
         end
-    end)
-end
+        
+        -- 2. Tự động tải các Icon
+        for _, ic in pairs(icons) do
+            if ic.u then
+                if not isfile(ic.f) then writefile(ic.f, game:HttpGet((ic.u:gsub("%/revision/.*$", "")))) end
+                ic.id = getcustomasset(ic.f)
+            end
+        end
+    end
+end)
 
--- [ UI BUILDER ] --
+-- [ AESTHETIC KAWAII PINK UI BUILDER ] --
 pcall(function() game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.All, false) end)
-local SG = mk("ScreenGui", {Name="StatusUI", ResetOnSpawn=false, IgnoreGuiInset=true, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, CG)
-local BG = mk("Frame", {Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(10,10,12)}, SG)
-local MB = mk("Frame", {Size=UDim2.new(0,480,0,420), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundColor3=Color3.fromRGB(14,16,24)}, BG)
-mk("UICorner", {CornerRadius=UDim.new(0,12)}, MB); mk("UIStroke", {Color=Color3.fromRGB(0,230,255), Thickness=1.5, Transparency=0.2}, MB)
-local Cont = mk("Frame", {Size=UDim2.new(1,-30,1,-45), Position=UDim2.new(0,15,0,45), BackgroundTransparency=1}, MB)
-mk("UIListLayout", {Padding=UDim.new(0,10), HorizontalAlignment=Enum.HorizontalAlignment.Center, SortOrder=Enum.SortOrder.LayoutOrder}, Cont)
+local SG = mk("ScreenGui", {Name="StatusUI_Kawaii", ResetOnSpawn=false, IgnoreGuiInset=true, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, CG)
 
-mk("TextLabel", {Size=UDim2.new(1,0,0,25), BackgroundTransparency=1, Font=Enum.Font.GothamBold, Text=" Owner: Cooki_Hieu", TextColor3=Color3.fromRGB(255,215,0), TextSize=16}, Cont)
-mk("TextLabel", {Size=UDim2.new(1,0,0,25), BackgroundTransparency=1, Font=Enum.Font.GothamBold, Text=" OVERLAY: "..plr.DisplayName, TextColor3=Color3.fromRGB(0,230,255), TextSize=15}, Cont)
+-- Hình nền phủ toàn màn hình (Màu nền trắng hồng nhẹ dự phòng nếu chưa dán link)
+local BG = mk("ImageLabel", {Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(255, 240, 245), Image=bgAssetId, ScaleType=Enum.ScaleType.Crop}, SG)
+
+-- Box trong suốt tạo cảm giác thạch (Jelly)
+local MB = mk("Frame", {Size=UDim2.new(0,480,0,420), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundColor3=Color3.fromRGB(255, 230, 240), BackgroundTransparency=0.65}, BG)
+mk("UICorner", {CornerRadius=UDim.new(0,16)}, MB) 
+mk("UIStroke", {Color=Color3.fromRGB(255, 105, 180), Thickness=3, Transparency=0.1}, MB) 
+
+local Cont = mk("Frame", {Size=UDim2.new(1,-30,1,-45), Position=UDim2.new(0,15,0,45), BackgroundTransparency=1}, MB)
+mk("UIListLayout", {Padding=UDim.new(0,12), HorizontalAlignment=Enum.HorizontalAlignment.Center, SortOrder=Enum.SortOrder.LayoutOrder}, Cont)
+
+local TitleOwner = mk("TextLabel", {Size=UDim2.new(1,0,0,25), BackgroundTransparency=1, Font=Enum.Font.FredokaOne, Text="🎀 OWNER: COOKI_HIEU", TextColor3=Color3.fromRGB(255, 255, 255), TextSize=22}, Cont)
+mk("UIStroke", {Color=Color3.fromRGB(255, 20, 147), Thickness=2}, TitleOwner) 
+
+local TitleName = mk("TextLabel", {Size=UDim2.new(1,0,0,25), BackgroundTransparency=1, Font=Enum.Font.FredokaOne, Text="OVERLAY: "..plr.DisplayName, TextColor3=Color3.fromRGB(255, 255, 255), TextSize=18}, Cont)
+mk("UIStroke", {Color=Color3.fromRGB(255, 105, 180), Thickness=2}, TitleName)
 
 local function makeRow(icId, txt, col, isR)
     local f = mk("Frame", {Size=UDim2.new(1,0,0,35), BackgroundTransparency=1}, Cont)
@@ -92,18 +120,24 @@ local function makeRow(icId, txt, col, isR)
         local img = mk("ImageLabel", {Size=UDim2.new(0,30,0,30), BackgroundTransparency=1, Image=icId}, f)
         if isR then mk("UICorner", {CornerRadius=UDim.new(1,0)}, img) end
     end
-    return mk("TextLabel", {Size=UDim2.new(0,260,1,0), BackgroundTransparency=1, Font=Enum.Font.GothamBold, Text=txt, TextColor3=col, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, f)
+    
+    local lbl = mk("TextLabel", {Size=UDim2.new(0,260,1,0), BackgroundTransparency=1, Font=Enum.Font.FredokaOne, Text=txt, TextColor3=col, TextSize=24, TextXAlignment=Enum.TextXAlignment.Left}, f)
+    mk("UIStroke", {Color=Color3.fromRGB(255, 20, 147), Thickness=2}, lbl) 
+    return lbl
 end
 
-local Lbl_Lvl = makeRow(icons.Level.id, "Level: Loading...", Color3.fromRGB(0,255,127), false)
-local Lbl_Coin = makeRow(icons.Coin.id, "Loading...", Color3.fromRGB(255,215,0), true)
-local Lbl_Cash = makeRow(icons.Cash.id, "Cash: Loading...", Color3.fromRGB(85,255,85), false)
-local Lbl_Spin = makeRow(icons.Spin.id, "Spins: Loading...", Color3.fromRGB(255,105,180), false)
+local Lbl_Lvl = makeRow(icons.Level.id, "Level: Loading...", Color3.fromRGB(152, 251, 152), false) 
+local Lbl_Coin = makeRow(icons.Coin.id, "Loading...", Color3.fromRGB(255, 255, 150), true)       
+local Lbl_Cash = makeRow(icons.Cash.id, "Cash: Loading...", Color3.fromRGB(175, 238, 238), false) 
+local Lbl_Spin = makeRow(icons.Spin.id, "Spins: Loading...", Color3.fromRGB(255, 182, 193), false) 
 
-local SF = mk("Frame", {Size=UDim2.new(1,0,0,60), BackgroundColor3=Color3.fromRGB(10,12,18)}, Cont)
-mk("UICorner", {CornerRadius=UDim.new(0,8)}, SF); mk("UIStroke", {Color=Color3.fromRGB(0,200,230), Transparency=0.5}, SF)
-local StatusTxt = mk("TextLabel", {Size=UDim2.new(1,-20,1,-10), Position=UDim2.new(0,10,0,5), BackgroundTransparency=1, Font=Enum.Font.Code, TextColor3=Color3.fromRGB(0,255,204), TextSize=13, TextXAlignment=Enum.TextXAlignment.Left}, SF)
-local function setStatus(m, i) StatusTxt.Text = string.format("[%s] %s STATUS: %s", os.date("%H:%M:%S"), i or "▶", m:upper()) end
+local SF = mk("Frame", {Size=UDim2.new(1,0,0,60), BackgroundColor3=Color3.fromRGB(255, 240, 245), BackgroundTransparency=0.4}, Cont)
+mk("UICorner", {CornerRadius=UDim.new(0,12)}, SF); mk("UIStroke", {Color=Color3.fromRGB(255, 105, 180), Transparency=0, Thickness=2}, SF)
+
+local StatusTxt = mk("TextLabel", {Size=UDim2.new(1,-20,1,-10), Position=UDim2.new(0,10,0,5), BackgroundTransparency=1, Font=Enum.Font.FredokaOne, TextColor3=Color3.fromRGB(255, 255, 255), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, SF)
+mk("UIStroke", {Color=Color3.fromRGB(255, 20, 147), Thickness=1.5}, StatusTxt)
+
+local function setStatus(m, i) StatusTxt.Text = string.format("[%s] %s STATUS: %s", os.date("%H:%M:%S"), i or "🌸", m:upper()) end
 
 -- [ CORE LOGIC ] --
 local function getRC()
@@ -159,7 +193,6 @@ local function hop()
                 if ev then ev:FireServer(unpack(createArgs)) end
             end)
             
-            -- [CƠ CHẾ FORCE-HOP]: Đẩy về Main Menu nếu kẹt lệnh Hop quá 15 giây
             if hopAttempts >= 10 then
                 pcall(function() TS:Teleport(4616652839) end)
             end
@@ -208,8 +241,7 @@ elseif game.PlaceId == 1511883870 or game.PlaceId == 5943872934 then
             task.wait(9e9)
         else
             stuck = stuck + 0.5
-            -- S
-            if stuck >= 120 then 
+            if stuck >= 90 then 
                 setStatus("Timeout (90s) no Rellcoin, Hopping...", "⚠️")
                 hop()
                 task.wait(9e9) 
