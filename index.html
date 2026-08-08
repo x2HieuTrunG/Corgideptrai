@@ -3,209 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HT Storage - Hệ Thống Quản Lý File</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Tool Up Script Lua</title>
     <style>
-        :root {
-            --bg-body: #f4f7f6;
-            --bg-card: #ffffff;
-            --primary-color: #0056b3;
-            --primary-hover: #004494;
-            --text-main: #333333;
-            --text-muted: #777777;
-            --border-color: #e1e8ed;
-            --danger-color: #dc3545;
-            --shadow: 0 4px 6px rgba(0,0,0,0.05);
-            --radius: 10px;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            background-color: #0f111a;
+            color: #a6accd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
-        .dashboard-container { width: 100%; max-width: 1200px; display: grid; grid-template-columns: 300px 1fr; gap: 30px; }
-
-        /* Sidebar Styles */
-        .sidebar { background: var(--bg-card); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow); height: fit-content; position: sticky; top: 20px; }
-        .brand-logo { font-size: 22px; font-weight: 800; color: var(--primary-color); margin-bottom: 25px; display: flex; align-items: center; gap: 10px; justify-content: center;}
-        
-        /* Form Đăng Nhập bên Sidebar */
-        .login-box { width: 100%; }
-        .login-box h3 { font-size: 16px; margin-bottom: 15px; text-align: center; color: var(--text-main); }
-        .input-group { margin-bottom: 12px; }
-        .input-group input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; }
-        .input-group input:focus { border-color: var(--primary-color); }
-        .btn-block { width: 100%; padding: 10px; background: var(--primary-color); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-block:hover { background: var(--primary-hover); }
-
-        /* Khung Upload bên Sidebar */
-        .upload-box { width: 100%; border: 2px dashed #b1bdc9; border-radius: var(--radius); padding: 30px 15px; text-align: center; background-color: #f8fafc; cursor: pointer; display: block; }
-        .upload-icon { font-size: 35px; color: var(--primary-color); margin-bottom: 10px; }
-        .upload-text-main { font-size: 14px; font-weight: 600; margin-bottom: 15px; }
-        #myFile { display: none; }
-        .btn-logout { width: 100%; padding: 8px; background: #f8d7da; color: #721c24; border: none; border-radius: 6px; margin-top: 15px; cursor: pointer; font-weight: 600; }
-
-        /* Main Content Styles */
-        .main-content { background: var(--bg-card); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow); }
-        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
-        .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-        
-        /* Card Tệp Tin */
-        .file-card { background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; transition: all 0.2s; }
-        .file-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
-        .file-icon-wrapper { font-size: 40px; margin-bottom: 15px; text-align: center; color: #b0bec5; }
-        .file-name { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all; }
-        .file-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 15px; display: flex; flex-direction: column; gap: 2px; }
-        
-        .file-actions { display: flex; gap: 8px; margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 10px; }
-        .action-btn { flex: 1; text-align: center; text-decoration: none; padding: 6px; font-size: 12px; border-radius: 4px; font-weight: 600; border: none; cursor: pointer; }
-        .btn-dl { background: #f0f7ff; color: var(--primary-color); }
-        .btn-del { background: #fff5f5; color: var(--danger-color); display: none; } /* Mặc định ẩn nút xóa */
-
-        .no-file { grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); font-style: italic; }
-
-        @media (max-width: 768px) { .dashboard-container { grid-template-columns: 1fr; } }
+        .container {
+            background-color: #1a1c29;
+            padding: 25px;
+            border-radius: 8px;
+            width: 95%;
+            max-width: 700px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 1px solid #292d3e;
+        }
+        h2 { margin-bottom: 20px; color: #82aaff; text-align: center; text-transform: uppercase; letter-spacing: 2px; }
+        textarea {
+            width: 100%;
+            height: 250px;
+            background-color: #0f111a;
+            color: #c3e88d;
+            border: 1px solid #444267;
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 14px;
+            resize: vertical;
+        }
+        textarea:focus { outline: none; border-color: #82aaff; }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background-color: #c792ea;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { background-color: #b074d6; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        .result-box {
+            margin-top: 20px;
+            display: none;
+            background-color: #0f111a;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #c792ea;
+        }
+        .result-box p { margin-bottom: 10px; color: #fff; font-size: 14px;}
+        .result-box input {
+            width: 100%;
+            padding: 10px;
+            background-color: #1a1c29;
+            color: #ffcb6b;
+            border: 1px solid #444267;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        .btn-copy { background-color: #82aaff; margin-top: 10px; }
+        .btn-copy:hover { background-color: #6994ec; }
     </style>
 </head>
 <body>
 
-<div class="dashboard-container">
-    <aside class="sidebar">
-        <div class="brand-logo">
-            <i class="fa-solid fa-cloud"></i> <span>HT Storage</span>
+    <div class="container">
+        <h2>🔥 Up Script Loadstring 🔥</h2>
+        <textarea id="scriptInput" placeholder="-- Dán mã nguồn Lua của bạn vào đây..."></textarea>
+        <button id="uploadBtn">Tạo Link Loadstring</button>
+
+        <div class="result-box" id="resultBox">
+            <p>Thành công! Copy lệnh dưới đây để chạy trong game:</p>
+            <input type="text" id="linkOutput" readonly>
+            <button class="btn-copy" id="copyBtn">Copy Lệnh</button>
         </div>
-        
-        <div id="loginSection" class="login-box">
-            <h3><i class="fa-solid fa-lock"></i> Admin Login</h3>
-            <div class="input-group">
-                <input type="text" id="username" placeholder="Tài khoản admin">
-            </div>
-            <div class="input-group">
-                <input type="password" id="password" placeholder="Mật khẩu">
-            </div>
-            <button class="btn-block" onclick="handleLogin()">Đăng nhập</button>
-        </div>
+    </div>
 
-        <div id="uploadSection" class="upload-box" style="display: none;">
-            <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
-                <label style="cursor: pointer;">
-                    <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-                    <div class="upload-text-main">Chọn file tải lên</div>
-                    <input type="file" name="myFile" id="myFile" required onchange="document.getElementById('uploadForm').submit()">
-                </label>
-            </form>
-            <button class="btn-logout" onclick="handleLogout()">Đăng xuất Admin</button>
-        </div>
-    </aside>
+    <script>
+        const uploadBtn = document.getElementById('uploadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const scriptInput = document.getElementById('scriptInput');
+        const resultBox = document.getElementById('resultBox');
+        const linkOutput = document.getElementById('linkOutput');
 
-    <main class="main-content">
-        <div class="content-header">
-            <h2>Kho Lưu Trữ Công Khai</h2>
-            <div id="fileCount" style="font-size: 14px; color: var(--text-muted);">0 tệp tin</div>
-        </div>
-        <div id="fileGrid" class="file-grid"></div>
-    </main>
-</div>
+        uploadBtn.addEventListener('click', async () => {
+            const code = scriptInput.value.trim();
+            if (!code) {
+                alert('Vui lòng nhập code trước khi up!');
+                return;
+            }
 
-<script>
-    let IS_ADMIN = false;
+            // Đổi trạng thái nút
+            uploadBtn.textContent = 'Đang xử lý...';
+            uploadBtn.disabled = true;
 
-    function formatBytes(bytes) {
-        if (!+bytes) return '0 Bytes';
-        const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(bytes) / Math.log(k));
-        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-    }
+            try {
+                // Đóng gói dữ liệu để gửi lên dpaste (API lưu code miễn phí)
+                const formData = new URLSearchParams();
+                formData.append('content', code);
+                formData.append('syntax', 'lua');
+                formData.append('expiry_days', '365'); // Lưu tối đa 1 năm (tùy chính sách dpaste)
 
-    // Kiểm tra trạng thái đăng nhập để setup giao diện
-    function checkAuth() {
-        return fetch('/api/auth-status')
-            .then(res => res.json())
-            .then(data => {
-                IS_ADMIN = data.isAdmin;
-                if (IS_ADMIN) {
-                    document.getElementById('loginSection').style.display = 'none';
-                    document.getElementById('uploadSection').style.display = 'block';
-                } else {
-                    document.getElementById('loginSection').style.display = 'block';
-                    document.getElementById('uploadSection').style.display = 'none';
-                }
-            });
-    }
-
-    // Xử lý Đăng nhập
-    function handleLogin() {
-        const u = document.getElementById('username').value;
-        const p = document.getElementById('password').value;
-        
-        fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: u, password: p })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                checkAuth().then(() => loadFiles());
-            } else {
-                alert(data.message);
+                // Gửi request trực tiếp từ trình duyệt
+                const response = await fetch('https://dpaste.com/api/v2/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData.toString()
+                });
+                
+                // dpaste sẽ trả về một link dạng: https://dpaste.com/XYZ123
+                const link = await response.text(); 
+                
+                // Để lấy raw text, chỉ cần thêm .txt vào cuối link
+                const rawLink = link.trim() + '.txt';
+                
+                // Lắp ráp thành câu lệnh loadstring hoàn chỉnh
+                const loadstringCommand = `loadstring(game:HttpGet("${rawLink}"))()`;
+                
+                // Hiển thị ra màn hình
+                linkOutput.value = loadstringCommand;
+                resultBox.style.display = 'block';
+                
+            } catch (error) {
+                alert('Lỗi mạng hoặc API đang bận. Vui lòng thử lại!');
+                console.error(error);
+            } finally {
+                // Trả lại trạng thái nút ban đầu
+                uploadBtn.textContent = 'Tạo Link Loadstring';
+                uploadBtn.disabled = false;
             }
         });
-    }
 
-    // Xử lý Đăng xuất
-    function handleLogout() {
-        fetch('/api/logout', { method: 'POST' })
-        .then(() => {
-            checkAuth().then(() => loadFiles());
+        // Xử lý nút Copy
+        copyBtn.addEventListener('click', () => {
+            linkOutput.select();
+            document.execCommand('copy');
+            copyBtn.textContent = '✔️ Đã Copy!';
+            setTimeout(() => { copyBtn.textContent = 'Copy Lệnh'; }, 2000);
         });
-    }
+    </script>
 
-    // Lấy danh sách file công khai
-    function loadFiles() {
-        fetch('/api/files')
-            .then(res => res.json())
-            .then(files => {
-                const grid = document.getElementById('fileGrid');
-                document.getElementById('fileCount').innerText = `${files.length} tệp tin`;
-                grid.innerHTML = '';
-
-                if (files.length === 0) {
-                    grid.innerHTML = '<div class="no-file">Kho lưu trữ trống.</div>';
-                    return;
-                }
-
-                files.forEach(file => {
-                    const card = document.createElement('div');
-                    card.className = 'file-card';
-                    card.innerHTML = `
-                        <div class="file-icon-wrapper"><i class="fa-solid fa-file"></i></div>
-                        <div class="file-name" title="${file.filename}">${file.filename}</div>
-                        <div class="file-meta">
-                            <span>${formatBytes(file.size)}</span>
-                            <span>${file.upload_time}</span>
-                        </div>
-                        <div class="file-actions">
-                            <a href="/download/${file.id}" class="action-btn btn-dl"><i class="fa-solid fa-download"></i> Tải về</a>
-                            <button class="action-btn btn-del" style="display: ${IS_ADMIN ? 'block' : 'none'}" onclick="deleteFile(${file.id})"><i class="fa-solid fa-trash"></i> Xóa</button>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                });
-            });
-    }
-
-    // Xóa file (Chỉ chạy được thành công nếu là Admin thực sự)
-    function deleteFile(id) {
-        if (confirm("Xóa vĩnh viễn tệp tin này?")) {
-            fetch(`/delete/${id}`, { method: 'POST' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) loadFiles();
-                    else alert(data.message);
-                });
-        }
-    }
-
-    // Chạy khởi tạo ban đầu
-    checkAuth().then(() => loadFiles());
-</script>
 </body>
 </html>
