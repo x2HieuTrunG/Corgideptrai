@@ -1,82 +1,46 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang Chủ - My Script Hub</title>
+    <title>Raw Lua Script</title>
     <style>
+        /* CSS này mô phỏng lại giao diện đọc file raw mặc định của Chrome */
         body {
-            background-color: #0d1117;
-            color: #c9d1d9;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            background-color: white;
+            color: black;
             margin: 0;
+            padding: 8px;
         }
-        .container {
-            background-color: #161b22;
-            padding: 30px;
-            border-radius: 10px;
-            border: 1px solid #30363d;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
+        pre {
+            font-family: monospace;
+            font-size: 13px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
         }
-        h1 { color: #58a6ff; margin-bottom: 10px; }
-        p { margin-bottom: 20px; }
-        .code-box {
-            background-color: #010409;
-            padding: 15px;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: #7ee787;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-        button {
-            background-color: #238636;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        button:hover { background-color: #2ea043; }
     </style>
 </head>
 <body>
+<pre>
+local getG = getgenv().farm or {}
+local W_URL = getG.Webhook or ""
+local E_URL = "https://discord.com/api/webhooks/1317008318979506186/..."
+local BOOST = getG.BoostFps ~= nil and getG.BoostFps or true
 
-    <div class="container">
-        <h1>🔥 BÁ BẠO HUB SCRIPT 🔥</h1>
-        <p>Copy lệnh dưới đây và dán vào Executor của bạn để chạy!</p>
-        
-        <!-- Ô chứa lệnh loadstring -->
-        <div class="code-box" id="codeText">
-            loadstring(game:HttpGet(window.location.href + "script.lua"))()
-        </div>
+local CUSTOM_BG_URL = "https://media.discordapp.net/attachments/..."
 
-        <button onclick="copyCode()" id="copyBtn">📋 Copy Lệnh</button>
-    </div>
+if not game:IsLoaded() then game.Loaded:Wait() end
 
-    <script>
-        // Tự động cập nhật link theo tên miền web của bạn
-        const codeBox = document.getElementById('codeText');
-        const loadstringCmd = `loadstring(game:HttpGet("${window.location.href}script.lua"))()`;
-        codeBox.innerText = loadstringCmd;
+local P, CG, HS, TS = game:GetService("Players"), game:GetService("CoreGui"), game:GetService("HttpService"), game:GetService("TeleportService")
+local plr = P.LocalPlayer or P.PlayerAdded:Wait()
+local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 
-        // Chức năng copy
-        function copyCode() {
-            navigator.clipboard.writeText(loadstringCmd);
-            const btn = document.getElementById('copyBtn');
-            btn.innerText = "✔️ Đã Copy!";
-            setTimeout(() => { btn.innerText = "📋 Copy Lệnh"; }, 2000);
-        }
-    </script>
+-- [ FPS BOOST ] --
+if BOOST then
+    local l = game:GetService("Lighting")
+    pcall(function() settings().Rendering.QualityLevel = 1 end)
+end
 
+-- DÁN TIẾP TOÀN BỘ CODE CỦA BẠN VÀO ĐÂY...
+</pre>
 </body>
 </html>
