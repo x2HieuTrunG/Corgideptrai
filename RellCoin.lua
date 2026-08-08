@@ -374,14 +374,26 @@ local function sendDiscordWebhook(oldCoins, newCoins, timeElapsed)
     end)
 end
 
+-- [ĐÃ FIX]: Cập nhật hàm lấy RellCoin để kiểm tra nhiều đường dẫn chuẩn xác hơn
 local function getRellCoins()
     local val = 0
     pcall(function()
+        -- 1. Ưu tiên lấy từ Folder Statz (dữ liệu thật của player)
+        local statz = player:FindFirstChild("statz")
+        if statz then
+            local rcVal = statz:FindFirstChild("rellcoins") or statz:FindFirstChild("RC") or statz:FindFirstChild("RellCoin")
+            if rcVal then
+                val = tonumber(rcVal.Value) or 0
+                return
+            end
+        end
+
+        -- 2. Lấy dự phòng từ UI nếu không tìm thấy trong Statz
         local mainUI = playerGui:FindFirstChild("Main")
         if mainUI then
-            local ryo2 = mainUI:FindFirstChild("Ryo2")
-            if ryo2 then
-                local amtLabel = ryo2:FindFirstChild("amt")
+            local rcUI = mainUI:FindFirstChild("RC") or mainUI:FindFirstChild("RellCoin") or mainUI:FindFirstChild("Ryo2")
+            if rcUI then
+                local amtLabel = rcUI:FindFirstChild("amt")
                 if amtLabel then
                     local currentText = amtLabel.Text ~= "" and amtLabel.Text or (amtLabel:FindFirstChild("ContentText") and amtLabel.ContentText or "")
                     val = parseCoin(currentText)
@@ -410,6 +422,10 @@ task.spawn(function()
 
                 local spinsVal = statz:FindFirstChild("spins") or statz:FindFirstChild("spin")
                 if spinsVal then SpinLabel.Text = "Spins: " .. formatNumber(spinsVal.Value) end
+                
+                -- Update Realtime UI cho RellCoin luôn
+                local currentRC = getRellCoins()
+                CoinLabel.Text = formatNumber(currentRC)
             end
         end)
     end
@@ -470,11 +486,15 @@ elseif currentPlaceId == 1511883870 or currentPlaceId == 5943872934 then
     task.wait(3)
 
     local oldRell = 0
+    local retryCount = 0
+    
+    -- [ĐÃ FIX]: Không để lặp vô tận nếu RC thực sự là 0
     repeat
-        task.wait(0.5)
+        task.wait(1)
         oldRell = getRellCoins()
         CoinLabel.Text = formatNumber(oldRell)
-    until oldRell > 0
+        retryCount = retryCount + 1
+    until oldRell > 0 or retryCount > 15 
 
     local startTime = os.time()
     local stuckTimer = 0 
