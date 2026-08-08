@@ -208,7 +208,7 @@ elseif game.PlaceId == 1511883870 or game.PlaceId == 5943872934 then
             task.wait(9e9)
         else
             stuck = stuck + 0.5
-            -- [GIẢM TIMEOUT]: Chờ tối đa 90 giây thay vì 120 giây
+            -- S
             if stuck >= 90 then 
                 setStatus("Timeout (90s) no Rellcoin, Hopping...", "⚠️")
                 hop()
