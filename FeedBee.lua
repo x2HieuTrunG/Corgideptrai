@@ -1,24 +1,4 @@
-repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
 
--- config by x2hieutrung
-getgenv().Config = getgenv().Config or {}
-getgenv().Config["Auto Feed"] = {
-    ["Enable"] = true,
-    ["Bee Amount"] = 50, -- so luong slot feed
-    ["Bee Level"] = 15,  -- chinh level
-    ["Auto Buy Treat"] = true,
-    ["Bee Food"] = {
-        ["Treat"] = true,
-        ["SunflowerSeed"] = true,
-        ["Blueberry"] = true,
-        ["Strawberry"] = true,
-        ["Pineapple"] = true,
-        ["Bitterberry"] = true,
-        ["MoonCharm"] = true,
-        ["Neonberry"] = true,
-        ["GingerbreadBear"] = true
-    }
-}
 
 local Config = getgenv().Config
 local FeedConfig = Config["Auto Feed"]
