@@ -1,6 +1,6 @@
-local Players           = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace         = game:GetService("Workspace")
+local Players            = game:GetService("Players")
+local ReplicatedStorage  = game:GetService("ReplicatedStorage")
+local Workspace          = game:GetService("Workspace")
 
 local localPlayer = Players.LocalPlayer
 
@@ -60,6 +60,7 @@ local replayRemote       = findRemote("replayDungeon")
 local dungeonStatsRemote = findRemote("getDungeonStats")
 local respondJoinRemote  = findRemote("respondJoinRequest")
 local showJoinRemote     = findRemote("showJoinRequest")
+local sendJoinRemote     = findRemote("sendJoinRequest") -- [NEW] Remote để gửi yêu cầu join
 local leaveRemote        = findRemote({ "ReturnToLobbyEvent", "teleToLobby", "leaveDungeon", "goLobby", "leaveGame" })
 
 local okWin, Window = pcall(function()
@@ -85,21 +86,10 @@ local LeftCol  = Tabs.Main:AddLeftGroupbox("Manager")
 local RightCol = Tabs.Main:AddRightGroupbox("Status")
 
 local DungeonOrder = {
-    "Desert Temple",
-    "Winter Outpost",
-    "Pirate Island",
-    "King's Castle",
-    "The Underworld",
-    "Samurai Palace",
-    "The Canals",
-    "Ghastly Harbor",
-    "Steampunk Sewers",
-    "Orbital Outpost",
-    "Volcanic Chambers",
-    "Aquatic Temple",
-    "Enchanted Forest",
-    "Northern Lands",
-    "Egg Island",
+    "Desert Temple", "Winter Outpost", "Pirate Island", "King's Castle",
+    "The Underworld", "Samurai Palace", "The Canals", "Ghastly Harbor",
+    "Steampunk Sewers", "Orbital Outpost", "Volcanic Chambers",
+    "Aquatic Temple", "Enchanted Forest", "Northern Lands", "Egg Island"
 }
 
 local DungeonDifficultyLevels = {
@@ -194,6 +184,10 @@ local autoAcceptEnabled  = true
 local configuredMembers  = {}
 local lastQueuedMode     = nil
 local acceptConn         = nil
+
+-- [NEW] Biến trạng thái cho tính năng Auto Join Request
+local autoJoinEnabled    = false 
+local targetJoinUsername = ""
 
 local statusLabel, levelLabel, bestLabel
 local detailStatusAt = 0
@@ -717,6 +711,43 @@ LeftCol:AddToggle("AutoAccept", {
     end,
 })
 
+-- [NEW] GIAO DIỆN AUTO JOIN REQUEST --
+LeftCol:AddDivider()
+
+LeftCol:AddInput("TargetUsernameJoin", {
+    Default     = "",
+    Numeric     = false,
+    Finished    = false,
+    Text        = "Username to send join request",
+    Placeholder = "Name",
+    Callback    = function(value)
+        targetJoinUsername = value
+    end,
+})
+
+LeftCol:AddToggle("AutoSendJoinReq", {
+    Text     = "Auto Send Join Request",
+    Default  = false,
+    Callback = function(value)
+        autoJoinEnabled = value
+    end,
+})
+
+
+task.spawn(function()
+    while true do
+        if autoJoinEnabled and targetJoinUsername ~= "" and sendJoinRemote then
+            pcall(function()
+                sendJoinRemote:InvokeServer(targetJoinUsername)
+            end)
+        end
+        task.wait(2) 
+    end
+end)
+---------------------------------------
+
+LeftCol:AddDivider()
+
 LeftCol:AddButton({
     Text = "Refresh Server Requirements",
     Func = function()
@@ -858,4 +889,4 @@ task.spawn(function()
 end)
 
 Library:Notify("hieutrung doggy loaded — configs for user " .. tostring(localPlayer.UserId))
-print("Loaded successfully (configs -> " .. ConfigRoot .. ")")
+print("Loaded successfully (configs -> " .. ConfigRoot .. ")")Fte
