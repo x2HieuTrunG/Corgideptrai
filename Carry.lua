@@ -711,7 +711,7 @@ LeftCol:AddToggle("AutoAccept", {
     end,
 })
 
--- [NEW] GIAO DIỆN AUTO JOIN REQUEST --
+ 
 LeftCol:AddDivider()
 
 LeftCol:AddInput("TargetUsernameJoin", {
