@@ -711,7 +711,7 @@ LeftCol:AddToggle("AutoAccept", {
     end,
 })
 
- 
+
 LeftCol:AddDivider()
 
 LeftCol:AddInput("TargetUsernameJoin", {
@@ -741,7 +741,7 @@ task.spawn(function()
                 sendJoinRemote:InvokeServer(targetJoinUsername)
             end)
         end
-        task.wait(2) 
+        task.wait(2) -- Cứ mỗi 2 giây gửi 1 lần
     end
 end)
 ---------------------------------------
@@ -889,4 +889,4 @@ task.spawn(function()
 end)
 
 Library:Notify("hieutrung doggy loaded — configs for user " .. tostring(localPlayer.UserId))
-print("Loaded successfully (configs -> " .. ConfigRoot .. ")")Fte
+print("Loaded successfully (configs -> " .. ConfigRoot .. ")")
