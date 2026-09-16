@@ -1,15 +1,19 @@
+--// hieutrung doggy x Aphalia Webhook & Dungeon Manager
 
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace         = game:GetService("Workspace")
 local HttpService       = game:GetService("HttpService")
+local TeleportService   = game:GetService("TeleportService")
 
 local localPlayer = Players.LocalPlayer
 while not localPlayer do
     task.wait()
     localPlayer = Players.LocalPlayer
 end
+
+local LOBBY_PLACE_ID = 2414851778 -- ID sảnh chính Dungeon Quest
 
 
 local SOURCES = {
@@ -107,13 +111,11 @@ end
 
 local function leaveLobbyFire()
     local done = false
-    -- 1. Gọi leaveRemote đã cache
     if leaveRemote then
         local ok = fireRemoteSafe(leaveRemote)
         if ok then done = true end
     end
 
-    -- 2. Quét lại remotes tìm tất cả remote liên quan đến lobby/leave
     if remotes then
         for _, child in ipairs(remotes:GetChildren()) do
             local l = child.Name:lower()
@@ -124,7 +126,6 @@ local function leaveLobbyFire()
         end
     end
 
-    -- 3. Click nút UI trong PlayerGui nếu có
     local pg = localPlayer:FindFirstChild("PlayerGui")
     if pg then
         for _, guiName in ipairs({ "dungeonClear", "gameDefeat", "pauseMenu", "topBarGui" }) do
@@ -152,17 +153,23 @@ local function leaveLobbyFire()
     return done
 end
 
+-- ====================================================================
+-- 4. CẤU HÌNH WEBHOOK & PERSISTENCE
+-- ====================================================================
+local WEBHOOK_URL_1       = ""    -- Webhook 1: Main / Drops
+local WEBHOOK_URL_2       = ""    -- Webhook 2: Stats / Acc kia
+local DISCORD_ID          = ""
+local SEND_WEBHOOK_1      = false
+local SEND_WEBHOOK_2      = false
+local STATS_TO_WEBHOOK_2  = false
 
-local WEBHOOK_URL       = ""
-local DISCORD_ID        = ""
-local SEND_WEBHOOK      = false
-local PING_ON_EPIC      = true
-local PING_ON_LEGENDARY = true
-local PING_ON_ULTIMATE  = true
-local INV_CAPACITY      = 300
-local SEND_STATS        = true
-local STATS_EVERY_WINS  = 1
-local STATS_ON_LOSSES   = true
+local PING_ON_EPIC        = true
+local PING_ON_LEGENDARY   = true
+local PING_ON_ULTIMATE    = true
+local INV_CAPACITY        = 300
+local SEND_STATS          = true
+local STATS_EVERY_WINS    = 1
+local STATS_ON_LOSSES     = true
 
 local DATA_FOLDER = "hieutrungcaylapbu"
 local STATS_FILE  = DATA_FOLDER .. "/stats.json"
@@ -327,18 +334,13 @@ local function getRequestFunc()
         or request
 end
 
-local function postWebhook(payload)
+local function postWebhookToUrl(targetUrl, payload)
     local requestFunc = getRequestFunc()
-    if not requestFunc then
-        warn("webhook: executor has no HTTP request function")
-        return false
-    end
-    if WEBHOOK_URL == "" or not WEBHOOK_URL:find("http") then
-        return false
-    end
+    if not requestFunc then return false end
+    if not targetUrl or targetUrl == "" or not targetUrl:find("http") then return false end
     local ok, res = pcall(function()
         return requestFunc({
-            Url = WEBHOOK_URL,
+            Url = targetUrl,
             Method = "POST",
             Headers = { ["Content-Type"] = "application/json" },
             Body = HttpService:JSONEncode(payload)
@@ -352,8 +354,31 @@ local function postWebhook(payload)
     return (code and code >= 200 and code < 300) or true
 end
 
+local function dispatchWebhook(payload, isStats)
+    local sentAny = false
+    if isStats and STATS_TO_WEBHOOK_2 then
+        if SEND_WEBHOOK_2 and WEBHOOK_URL_2 ~= "" then
+            local ok = postWebhookToUrl(WEBHOOK_URL_2, payload)
+            if ok then sentAny = true end
+        end
+        return sentAny
+    end
+
+    if SEND_WEBHOOK_1 and WEBHOOK_URL_1 ~= "" then
+        local ok = postWebhookToUrl(WEBHOOK_URL_1, payload)
+        if ok then sentAny = true end
+    end
+    if SEND_WEBHOOK_2 and WEBHOOK_URL_2 ~= "" and not (isStats and not STATS_TO_WEBHOOK_2) then
+        local ok = postWebhookToUrl(WEBHOOK_URL_2, payload)
+        if ok then sentAny = true end
+    end
+    return sentAny
+end
+
 local function sendDiscordEmbed(isWin, drops, statsData, titleSuffix)
-    if not SEND_WEBHOOK or WEBHOOK_URL == "" then return end
+    if (not SEND_WEBHOOK_1 or WEBHOOK_URL_1 == "") and (not SEND_WEBHOOK_2 or WEBHOOK_URL_2 == "") then
+        return
+    end
     statsData = statsData or {}
 
     local shouldPing = false
@@ -388,7 +413,11 @@ local function sendDiscordEmbed(isWin, drops, statsData, titleSuffix)
         pingContent = "<@" .. DISCORD_ID .. ">"
     end
 
-    local fields = {}
+    local roleText = masterEnabled and "Host (Master)" or "Alt (Member)"
+
+    local fields = {
+        { ["name"] = "Account", ["value"] = localPlayer.Name .. " (" .. roleText .. ")", ["inline"] = true },
+    }
     if statsData.Level and statsData.GoldEarned then
         table.insert(fields, { ["name"] = "Level",       ["value"] = statsData.Level,            ["inline"] = true })
         table.insert(fields, { ["name"] = "Run Time",    ["value"] = statsData.RunTime or "—",   ["inline"] = true })
@@ -414,7 +443,7 @@ local function sendDiscordEmbed(isWin, drops, statsData, titleSuffix)
         }}
     }
 
-    postWebhook(payload)
+    dispatchWebhook(payload, false)
 end
 
 local stats = {
@@ -575,6 +604,7 @@ end
 
 local function buildStatsEmbed()
     local lines = {}
+    table.insert(lines, "Account: " .. localPlayer.Name .. " (" .. (masterEnabled and "Host" or "Alt") .. ")")
     table.insert(lines, "Total runs: " .. stats.runs)
     if stats.wins > 0 then
         table.insert(lines, "Average clear: " .. fmtTime(stats.clearTime / stats.wins))
@@ -622,7 +652,7 @@ local function buildStatsEmbed()
     local fields = {}
     local chunk = table.concat(lines, "\n")
     if #chunk > 1024 then chunk = chunk:sub(1, 1020) .. "..." end
-    table.insert(fields, { ["name"] = "Session Stats", ["value"] = chunk, ["inline"] = false })
+    table.insert(fields, { ["name"] = "Session Stats Summary", ["value"] = chunk, ["inline"] = false })
 
     return {
         ["content"] = "",
@@ -638,7 +668,7 @@ end
 
 local statsWinsSinceLast = 0
 local function maybeSendStats(isWin)
-    if not (SEND_STATS and SEND_WEBHOOK) then return end
+    if not SEND_STATS then return end
     if isWin then
         statsWinsSinceLast = statsWinsSinceLast + 1
         if statsWinsSinceLast < STATS_EVERY_WINS then return end
@@ -648,7 +678,7 @@ local function maybeSendStats(isWin)
     statsWinsSinceLast = 0
     task.spawn(function()
         task.wait(1)
-        postWebhook(buildStatsEmbed())
+        dispatchWebhook(buildStatsEmbed(), true)
     end)
 end
 
@@ -673,14 +703,16 @@ saveStats()
 loadRunHistory()
 ensureFolder()
 
-
+-- ====================================================================
+-- 5. KHỞI TẠO CỬA SỔ GIAO DIỆN (OBSIDIAN UI)
+-- ====================================================================
 local okWin, Window = pcall(function()
     return Library:CreateWindow({
         Title    = "hieutrung doggy",
         Footer   = "created by the one and only. x2hieutrung",
         Center   = true,
         AutoShow = true,
-        Size     = UDim2.new(0, 540, 0, 360),
+        Size     = UDim2.new(0, 550, 0, 370),
     })
 end)
 if not okWin or not Window then
@@ -696,10 +728,12 @@ local Tabs = {
 
 local LeftCol  = Tabs.Main:AddLeftGroupbox("Manager")
 local RightCol = Tabs.Main:AddRightGroupbox("Status")
-local WebhookLeft  = Tabs.Webhook:AddLeftGroupbox("Discord Webhook")
+local WebhookLeft  = Tabs.Webhook:AddLeftGroupbox("Discord Dual-Webhook")
 local WebhookRight = Tabs.Webhook:AddRightGroupbox("Session Statistics")
 
-
+-- ====================================================================
+-- 6. BẢNG REQUIREMENTS CHUẨN XÁC VÀ BẢO MẬT
+-- ====================================================================
 local DungeonOrder = {
     "Desert Temple", "Winter Outpost", "Pirate Island", "King's Castle",
     "The Underworld", "Samurai Palace", "The Canals", "Ghastly Harbor",
@@ -736,7 +770,15 @@ local diffIndex = {}
 for i, d in ipairs(Difficulties) do diffIndex[d] = i end
 
 local function dungeonReqs(name)
-    return DungeonReqs[name] or DungeonDifficultyLevels[name] or {}
+    local base = DungeonDifficultyLevels[name] or {}
+    local custom = DungeonReqs[name]
+    if not custom then return base end
+    local merged = {}
+    for k, v in pairs(base) do merged[k] = v end
+    for k, v in pairs(custom) do
+        if type(v) == "number" and v > 0 then merged[k] = v end
+    end
+    return merged
 end
 
 local function clampMode(name, mode)
@@ -745,19 +787,30 @@ local function clampMode(name, mode)
     for _, d in ipairs(Difficulties) do
         if reqs[d] then return d end
     end
-    return mode
+    return mode or "Easy"
 end
 
+-- [FIX TOÀN DIỆN]: Thuật toán chọn Map/Độ khó chuẩn xác nhất theo level
 local function bestPickForLevel(level)
-    local bestName, bestMode = nil, nil
+    level = tonumber(level) or 1
+    local bestName, bestMode = "Desert Temple", "Easy"
+    
     for _, name in ipairs(DungeonOrder) do
         if not EventDungeons[name] then
             local reqs = dungeonReqs(name)
-            local mode = nil
+            local highestModeInThisMap = nil
+            
             for _, d in ipairs(Difficulties) do
-                if reqs[d] and level >= reqs[d] then mode = d end
+                local r = reqs[d]
+                if r and level >= r then
+                    highestModeInThisMap = d
+                end
             end
-            if mode then bestName, bestMode = name, mode end
+            
+            if highestModeInThisMap then
+                bestName = name
+                bestMode = highestModeInThisMap
+            end
         end
     end
     return bestName, bestMode
@@ -769,12 +822,17 @@ local function fetchDungeonReqs(name)
     if not ok or type(statsData) ~= "table" then return end
     local reqs = {}
     for _, d in ipairs(Difficulties) do
-        local entry = statsData[d]
-        if type(entry) == "table" and tonumber(entry.levelReq) then
-            reqs[d] = tonumber(entry.levelReq)
+        local entry = statsData[d] or statsData[d:lower()]
+        if type(entry) == "table" then
+            local lvl = tonumber(entry.levelReq or entry.minLevel or entry.reqLevel or entry.level)
+            if lvl and lvl > 0 then reqs[d] = lvl end
+        elseif type(entry) == "number" and entry > 0 then
+            reqs[d] = entry
         end
     end
-    if next(reqs) then DungeonReqs[name] = reqs end
+    if next(reqs) then
+        DungeonReqs[name] = reqs
+    end
 end
 
 local function refreshDungeonReqs()
@@ -786,7 +844,9 @@ local function refreshDungeonReqs()
     end
 end
 
-
+-- ====================================================================
+-- 7. BIẾN TRẠNG THÁI & HÀM ĐỌC LEVEL / MODE SIÊU CHUẨN XÁC
+-- ====================================================================
 local masterEnabled          = false
 local managerThread          = nil
 local hardcoreMode           = false
@@ -797,7 +857,6 @@ local autoAcceptEnabled      = true
 local configuredMembers      = {}
 local lastQueuedMode         = nil
 local acceptConn             = nil
-
 
 local autoJoinEnabled        = false 
 local targetJoinUsername     = ""
@@ -880,12 +939,75 @@ local function discoverMode(entry)
     return nil
 end
 
+-- [FIX]: Quét độ khó thực tế của phòng hiện tại
+local function getCurrentDungeonMode()
+    if lastQueuedMode then return lastQueuedMode end
+    
+    for _, name in ipairs({ "dungeonDifficulty", "difficulty", "mode", "dungeonMode", "diff" }) do
+        local val = Workspace:FindFirstChild(name)
+        if val and (val:IsA("StringValue") or val:IsA("ValueBase")) and val.Value ~= nil then
+            local strVal = tostring(val.Value):lower()
+            for _, d in ipairs(Difficulties) do
+                if strVal == d:lower() or strVal:find(d:lower(), 1, true) then return d end
+            end
+        end
+    end
+    
+    local d = Workspace:FindFirstChild("dungeon")
+    if d then
+        for _, name in ipairs({ "difficulty", "mode", "diff", "dungeonDifficulty" }) do
+            local val = d:FindFirstChild(name)
+            if val and val.Value ~= nil then
+                local strVal = tostring(val.Value):lower()
+                for _, diff in ipairs(Difficulties) do
+                    if strVal == diff:lower() or strVal:find(diff:lower(), 1, true) then return diff end
+                end
+            end
+        end
+    end
+    
+    local entry = myEntry()
+    local modeFromEntry = discoverMode(entry)
+    if modeFromEntry then return modeFromEntry end
+
+    local pg = localPlayer:FindFirstChild("PlayerGui")
+    if pg then
+        for _, gName in ipairs({ "topBarGui", "topBar", "dungeonClear", "pauseMenu" }) do
+            local g = pg:FindFirstChild(gName)
+            if g then
+                for _, lbl in ipairs(g:GetDescendants()) do
+                    if lbl:IsA("TextLabel") and lbl.Visible and lbl.Text ~= "" then
+                        local txt = lbl.Text:lower()
+                        for _, diff in ipairs(Difficulties) do
+                            if txt:find(diff:lower(), 1, true) then return diff end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+-- [FIX]: Đọc giá trị Level không bị lỗi chữ hoặc rác
 local function readLevelValue(v)
-    local ok, val = pcall(function() return v.Value end)
-    if not ok then return nil end
-    if type(val) == "number" then return val end
+    if not v then return nil end
+    local ok, val = pcall(function()
+        if typeof(v) == "Instance" then
+            if v:IsA("ValueBase") then return v.Value end
+            if v:IsA("TextLabel") or v:IsA("TextBox") then return v.Text end
+            return v.Value
+        end
+        return v
+    end)
+    if not ok or val == nil then return nil end
+    if type(val) == "number" and val > 0 then return math.floor(val) end
     if type(val) == "string" then
-        return tonumber((val:gsub("[%s,]", "")))
+        local clean = val:gsub(",", "")
+        local num = clean:match("%d+")
+        if num and tonumber(num) and tonumber(num) > 0 then
+            return tonumber(num)
+        end
     end
     return nil
 end
@@ -894,41 +1016,48 @@ local function getLevelForPlayer(p)
     if not p then return nil, nil end
     local ls = p:FindFirstChild("leaderstats")
     if ls then
-        local exact = ls:FindFirstChild("Level")
+        local exact = ls:FindFirstChild("Level") or ls:FindFirstChild("level")
         if exact then
             local n = readLevelValue(exact)
             if n then return n, "leaderstats.Level" end
         end
         for _, v in ipairs(ls:GetChildren()) do
-            if v.Name:lower():find("level") then
+            if v.Name:lower() == "level" or v.Name:lower():find("^lvl") then
                 local n = readLevelValue(v)
                 if n then return n, "leaderstats." .. v.Name end
             end
         end
     end
-    for _, v in ipairs(p:GetChildren()) do
-        if v.Name:lower():find("level") then
-            local n = readLevelValue(v)
-            if n then return n, "player." .. v.Name end
-        end
-    end
-    local data = Workspace:FindFirstChild("playerData") or Workspace:FindFirstChild("data")
-    if data then
-        local pd = data:FindFirstChild(p.Name) or data:FindFirstChild(tostring(p.UserId))
+    
+    local repData = ReplicatedStorage:FindFirstChild("playerData") or ReplicatedStorage:FindFirstChild("data")
+    if repData then
+        local pd = repData:FindFirstChild(p.Name) or repData:FindFirstChild(tostring(p.UserId))
         if pd then
-            local exact = pd:FindFirstChild("Level")
+            local exact = pd:FindFirstChild("Level") or pd:FindFirstChild("level")
             if exact then
                 local n = readLevelValue(exact)
-                if n then return n, "playerData.Level" end
-            end
-            for _, v in ipairs(pd:GetChildren()) do
-                if v.Name:lower():find("level") then
-                    local n = readLevelValue(v)
-                    if n then return n, "playerData." .. v.Name end
-                end
+                if n then return n, "ReplicatedStorage.playerData.Level" end
             end
         end
     end
+
+    local wsData = Workspace:FindFirstChild("playerData") or Workspace:FindFirstChild("data")
+    if wsData then
+        local pd = wsData:FindFirstChild(p.Name) or wsData:FindFirstChild(tostring(p.UserId))
+        if pd then
+            local exact = pd:FindFirstChild("Level") or pd:FindFirstChild("level")
+            if exact then
+                local n = readLevelValue(exact)
+                if n then return n, "Workspace.playerData.Level" end
+            end
+        end
+    end
+
+    local attrLvl = p:GetAttribute("Level") or p:GetAttribute("level")
+    if attrLvl and tonumber(attrLvl) and tonumber(attrLvl) > 0 then
+        return tonumber(attrLvl), "player.Attribute.Level"
+    end
+
     return nil, nil
 end
 
@@ -963,12 +1092,27 @@ local function scanPartyMembers()
     return members
 end
 
-local function isWorse(curName, curMode, bestName, bestMode)
-    if curName ~= bestName then
-        return (orderIndex[curName] or -1) < (orderIndex[bestName] or -1)
+-- [CÁC HÀM SO SÁNH CHUẨN XÁC]:
+-- Kiểm tra xem phòng hiện tại có KHỚP HOÀN TOÀN với map tốt nhất không
+local function isCurrentMatch(curName, curMode, bestName, bestMode)
+    if not curName or not bestName then return false end
+    if curName:lower() ~= bestName:lower() then return false end
+    if curMode and bestMode and curMode:lower() ~= bestMode:lower() then return false end
+    return true
+end
+
+-- Kiểm tra xem phòng hiện tại có bị THẤP HƠN (cũ) so với map mới mở không
+local function isCurrentOutdated(curName, curMode, bestName, bestMode)
+    if not curName or not bestName then return true end
+    local curOrd = orderIndex[curName] or -1
+    local bestOrd = orderIndex[bestName] or -1
+    if curOrd ~= bestOrd then
+        return curOrd < bestOrd
     end
-    if not curMode then return false end
-    return (diffIndex[curMode] or -1) < (diffIndex[bestMode] or -1)
+    if not curMode or not bestMode then return false end
+    local curDiff = diffIndex[curMode] or -1
+    local bestDiff = diffIndex[bestMode] or -1
+    return curDiff < bestDiff
 end
 
 local function fireStart()
@@ -987,7 +1131,12 @@ end
 local function returnToLobby()
     local t = 0
     while (inDungeon() or myEntry()) and masterEnabled and t < 30 do
-        if t % 3 == 0 then leaveLobbyFire() end
+        if t % 2 == 0 then leaveLobbyFire() end
+        if t >= 6 and inDungeon() then
+            pcall(function()
+                TeleportService:Teleport(LOBBY_PLACE_ID, localPlayer)
+            end)
+        end
         setStatus("Returning to lobby...")
         task.wait(1)
         t = t + 1
@@ -1058,29 +1207,6 @@ local function startWithMembers(expectedNames, shouldWait)
     return waitForDungeon(90)
 end
 
-local function restartParty(best, mode, previousMembers)
-    setStatus("Upgrading to " .. best .. " (" .. clampMode(best, mode) .. ") — restarting party...")
-    lastQueuedMode = nil
-    returnToLobby()
-    if not masterEnabled then return end
-    task.wait(1)
-
-    if not createDungeonLobby(best, mode) then return end
-    lastQueuedMode = clampMode(best, mode)
-    waitForEntry(10)
-
-    local expected = {}
-    local seenNames = {}
-    for _, n in ipairs(previousMembers or {}) do
-        if not seenNames[n:lower()] then seenNames[n:lower()] = true; table.insert(expected, n) end
-    end
-    for _, n in ipairs(configuredMembers) do
-        if not seenNames[n] then seenNames[n] = true; table.insert(expected, n) end
-    end
-
-    startWithMembers(expected, true)
-end
-
 local function keepReplaying(name)
     setStatus("Replaying " .. name .. "...")
     if replayRemote then
@@ -1133,7 +1259,11 @@ local function waitForRunToFinish()
     return true
 end
 
+-- ====================================================================
+-- 8. VÒNG LẶP CHÍNH: KHẮC PHỤC TRIỆT ĐỂ LỖI CHỌN / JOIN LỘN MAP
+-- ====================================================================
 local function runCycle()
+    -- TRƯỜNG HỢP 1: ĐANG TRONG DUNGEON
     if inDungeon() then
         local curName = currentDungeonName()
         if curName == "" then return end
@@ -1141,7 +1271,6 @@ local function runCycle()
         if not waitForRunToFinish() then return end
         if not masterEnabled then return end
 
-        local members = scanPartyMembers()
         local myLvl, lvlSrc = getLevelForPlayer(localPlayer)
         if levelLabel then
             levelLabel:SetText("Your level: " .. tostring(myLvl or "?") .. (lvlSrc and (" (" .. lvlSrc .. ")") or ""))
@@ -1162,15 +1291,23 @@ local function runCycle()
             return
         end
 
-        local curMode = lastQueuedMode or discoverMode(myEntry())
-        if isWorse(curName, curMode, best, mode) then
-            restartParty(best, mode, members)
+        local curMode = getCurrentDungeonMode()
+        
+        -- [FIX]: Chỉ khi kiểm tra chắc chắn đã mở được map/độ khó cao hơn mới về Lobby
+        if isCurrentOutdated(curName, curMode, best, mode) then
+            setStatus("Level up! Higher dungeon unlocked: " .. best .. " (" .. clampMode(best, mode) .. ") — Returning to Lobby...")
+            Library:Notify("Unlocked " .. best .. " (" .. clampMode(best, mode) .. ")! Returning to lobby...", 4)
+            lastQueuedMode = nil
+            returnToLobby()
+            return
         else
+            -- Vẫn là map/độ khó tốt nhất hiện tại -> Tiếp tục Replay
             keepReplaying(curName)
+            return
         end
-        return
     end
 
+    -- TRƯỜNG HỢP 2: ĐANG Ở SẢNH LOBBY (not inDungeon)
     if os.clock() - lastReplayAt < 15 then return end
     local members = scanPartyMembers()
 
@@ -1196,16 +1333,25 @@ local function runCycle()
 
     local entry = myEntry()
     local map = entryMapName(entry)
+    
+    -- [FIX LỖI JOIN LỘN MAP]:
+    -- Nếu đang ở trong một phòng tại Lobby:
     if entry and map and map ~= "" and map ~= "Lobby" then
-        local curMode = lastQueuedMode or discoverMode(entry)
-        if isWorse(map, curMode, best, mode) then
-            restartParty(best, mode, members)
-        else
-            setStatus("Lobby matches best — " .. map)
+        local curMode = getCurrentDungeonMode()
+        -- Kiểm tra xem phòng có KHỚP 100% với Best Map & Mode không
+        if isCurrentMatch(map, curMode, best, mode) then
+            setStatus("Lobby matches best: " .. map .. " (" .. (curMode or mode) .. ")")
             startWithMembers(members, false)
+        else
+            -- BỊ LỆCH MAP HOẶC LỆCH ĐỘ KHÓ: LẬP TỨC RỜI PHÒNG ĐỂ TẠO LẠI ĐÚNG MAP!
+            setStatus("Party map (" .. map .. " " .. tostring(curMode or "?") .. ") is incorrect! Expected: " .. best .. " (" .. mode .. "). Leaving party...")
+            leaveLobbyFire()
+            task.wait(2)
+            return
         end
     else
-        setStatus("Creating " .. best .. " (" .. mode .. ")...")
+        -- Chưa vào phòng nào: TẠO CHÍNH XÁC PHÒNG BEST DUNGEON CHO LEVEL CỦA MÌNH
+        setStatus("Creating best dungeon: " .. best .. " (" .. mode .. ")...")
         if createDungeonLobby(best, mode) then
             lastQueuedMode = clampMode(best, mode)
             waitForEntry(10)
@@ -1255,7 +1401,9 @@ local function disconnectAccept()
     end
 end
 
-
+-- ====================================================================
+-- 9. VÒNG LẶP CHO ACC PHỤ (ACC KIA) TỰ ĐỘNG THOÁT VỀ LOBBY THEO HOST
+-- ====================================================================
 task.spawn(function()
     local dungeonFinishDetectedAt = nil
     local wasInDungeon = false
@@ -1288,7 +1436,6 @@ task.spawn(function()
                 isFinished = true
             end
 
-            
             local leaderGone = false
             if targetJoinUsername ~= "" then
                 local leaderFound = false
@@ -1298,21 +1445,14 @@ task.spawn(function()
                         break
                     end
                 end
-                if not leaderFound then
-                    leaderGone = true
-                end
+                if not leaderFound then leaderGone = true end
             end
 
             if isFinished or leaderGone then
-                if not dungeonFinishDetectedAt then
-                    dungeonFinishDetectedAt = tick()
-                end
-
-               
+                if not dungeonFinishDetectedAt then dungeonFinishDetectedAt = tick() end
                 local waitSec = leaderGone and 1 or (returnLobbyDelay or 4)
 
                 if autoReturnLobbyEnabled and (tick() - dungeonFinishDetectedAt >= waitSec) then
-                    
                     if not masterEnabled or leaderGone then
                         setStatus("Dungeon completed — returning to lobby...")
                         leaveLobbyFire()
@@ -1330,20 +1470,18 @@ task.spawn(function()
     end
 end)
 
-
+-- Vòng lặp Auto Send Join Request (Acc phụ)
 task.spawn(function()
     while true do
         if autoJoinEnabled and targetJoinUsername ~= "" and sendJoinRemote then
-            pcall(function()
-                sendJoinRemote:InvokeServer(targetJoinUsername)
-            end)
+            pcall(function() sendJoinRemote:InvokeServer(targetJoinUsername) end)
         end
         task.wait(2)
     end
 end)
 
 -- ====================================================================
--- 9. GIAO DIỆN TAB: MAIN
+-- 10. GIAO DIỆN TAB: MAIN
 -- ====================================================================
 LeftCol:AddToggle("Master", {
     Text     = "Auto Best Dungeon",
@@ -1454,7 +1592,7 @@ LeftCol:AddButton({
     Func = function()
         task.spawn(function()
             leaveLobbyFire()
-            Library:Notify("Leaving dungeon / Returning to lobby...")
+            Library:Notify("Returning to lobby...")
         end)
     end,
 })
@@ -1500,15 +1638,46 @@ task.spawn(function()
     end
 end)
 
-
-WebhookLeft:AddInput("WebhookURLInput", {
+-- ====================================================================
+-- 11. GIAO DIỆN TAB: WEBHOOK & STATS (DUAL WEBHOOK)
+-- ====================================================================
+WebhookLeft:AddInput("WebhookURL1", {
     Default     = "",
     Numeric     = false,
     Finished    = true,
-    Text        = "Discord Webhook URL",
+    Text        = "Webhook URL 1 (Main / Drops)",
     Placeholder = "https://discord.com/api/webhooks/...",
-    Callback    = function(value) WEBHOOK_URL = value end,
+    Callback    = function(value) WEBHOOK_URL_1 = value end,
 })
+
+WebhookLeft:AddToggle("EnableWebhook1", {
+    Text     = "Enable Webhook 1",
+    Default  = false,
+    Callback = function(value) SEND_WEBHOOK_1 = value end,
+})
+
+WebhookLeft:AddInput("WebhookURL2", {
+    Default     = "",
+    Numeric     = false,
+    Finished    = true,
+    Text        = "Webhook URL 2 (Stats / Acc kia)",
+    Placeholder = "https://discord.com/api/webhooks/...",
+    Callback    = function(value) WEBHOOK_URL_2 = value end,
+})
+
+WebhookLeft:AddToggle("EnableWebhook2", {
+    Text     = "Enable Webhook 2",
+    Default  = false,
+    Callback = function(value) SEND_WEBHOOK_2 = value end,
+})
+
+WebhookLeft:AddToggle("StatsToWebhook2", {
+    Text     = "Send Stats to Webhook 2 Only",
+    Default  = false,
+    Callback = function(value) STATS_TO_WEBHOOK_2 = value end,
+})
+
+WebhookLeft:AddDivider()
 
 WebhookLeft:AddInput("DiscordIDInput", {
     Default     = "",
@@ -1519,14 +1688,8 @@ WebhookLeft:AddInput("DiscordIDInput", {
     Callback    = function(value) DISCORD_ID = value end,
 })
 
-WebhookLeft:AddToggle("EnableWebhook", {
-    Text     = "Enable Discord Webhook",
-    Default  = false,
-    Callback = function(value) SEND_WEBHOOK = value end,
-})
-
 WebhookLeft:AddToggle("SendStatsEmbedToggle", {
-    Text     = "Send Session Stats Embed",
+    Text     = "Send Periodic Session Stats",
     Default  = true,
     Callback = function(value) SEND_STATS = value end,
 })
@@ -1559,11 +1722,11 @@ WebhookLeft:AddToggle("PingUltimateToggle", {
 })
 
 WebhookLeft:AddButton({
-    Text = "Send Test Webhook",
+    Text = "Test Webhook 1",
     Func = function()
         task.spawn(function()
-            if WEBHOOK_URL == "" then
-                Library:Notify("Please enter a Webhook URL first!", 3)
+            if WEBHOOK_URL_1 == "" then
+                Library:Notify("Please enter Webhook URL 1 first!", 3)
                 return
             end
             local payload = {
@@ -1576,15 +1739,47 @@ WebhookLeft:AddButton({
                         { ["name"] = "Account", ["value"] = localPlayer.Name .. " (" .. tostring(localPlayer.UserId) .. ")", ["inline"] = true },
                         { ["name"] = "Time",    ["value"] = os.date("%Y-%m-%d %H:%M:%S"), ["inline"] = true }
                     },
-                    ["footer"] = { ["text"] = "hieutrung doggy x aphalia" },
+                    ["footer"] = { ["text"] = "hieutrung doggy x aphalia • Webhook 1" },
                     ["timestamp"] = DateTime.now():ToIsoDate()
                 }}
             }
-            local ok = postWebhook(payload)
+            local ok = postWebhookToUrl(WEBHOOK_URL_1, payload)
             if ok then
-                Library:Notify("Test webhook sent successfully!", 3)
+                Library:Notify("Test Webhook 1 sent successfully!", 3)
             else
-                Library:Notify("Failed to send webhook. Check URL/executor!", 4)
+                Library:Notify("Failed to send Webhook 1. Check URL!", 4)
+            end
+        end)
+    end,
+})
+
+WebhookLeft:AddButton({
+    Text = "Test Webhook 2",
+    Func = function()
+        task.spawn(function()
+            if WEBHOOK_URL_2 == "" then
+                Library:Notify("Please enter Webhook URL 2 first!", 3)
+                return
+            end
+            local payload = {
+                ["content"] = DISCORD_ID ~= "" and ("<@" .. DISCORD_ID .. ">") or "",
+                ["embeds"] = {{
+                    ["title"] = "Webhook sent successfully",
+                    ["description"] = "hieutrung doggy",
+                    ["color"] = 3447003,
+                    ["fields"] = {
+                        { ["name"] = "Account", ["value"] = localPlayer.Name .. " (" .. tostring(localPlayer.UserId) .. ")", ["inline"] = true },
+                        { ["name"] = "Time",    ["value"] = os.date("%Y-%m-%d %H:%M:%S"), ["inline"] = true }
+                    },
+                    ["footer"] = { ["text"] = "hieutrung doggy x aphalia • Webhook 2" },
+                    ["timestamp"] = DateTime.now():ToIsoDate()
+                }}
+            }
+            local ok = postWebhookToUrl(WEBHOOK_URL_2, payload)
+            if ok then
+                Library:Notify("Test Webhook 2 sent successfully!", 3)
+            else
+                Library:Notify("Failed to send Webhook 2. Check URL!", 4)
             end
         end)
     end,
@@ -1615,12 +1810,12 @@ WebhookRight:AddButton({
     Text = "Send Stats Embed Now",
     Func = function()
         task.spawn(function()
-            if WEBHOOK_URL == "" then
-                Library:Notify("Please enter a Webhook URL first!", 3)
-                return
+            local ok = dispatchWebhook(buildStatsEmbed(), true)
+            if ok then
+                Library:Notify("Stats embed sent to Discord.", 3)
+            else
+                Library:Notify("Failed to send stats. Enable at least 1 Webhook!", 4)
             end
-            postWebhook(buildStatsEmbed())
-            Library:Notify("Stats embed sent to Discord.", 3)
         end)
     end,
 })
@@ -1634,7 +1829,9 @@ WebhookRight:AddButton({
     end,
 })
 
-
+-- ====================================================================
+-- 12. GIAO DIỆN TAB: UI SETTINGS & CONFIG
+-- ====================================================================
 local MenuGroup = Tabs.UISettings:AddLeftGroupbox("Menu")
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
     Default = "End",
@@ -1684,7 +1881,9 @@ end)
 
 connectAccept()
 
-
+-- ====================================================================
+-- 13. RUNNER THEO DÕI STATS & LOOT DISCORD
+-- ====================================================================
 local runActive, runFired = false, false
 local currentDungeon = nil
 local runStart, runStartGold, runStartGems, runStartLevel = 0, 0, 0, 0
@@ -1996,11 +2195,10 @@ task.spawn(function()
     end
 end)
 
-
 task.spawn(function()
     task.wait(3)
     refreshDungeonReqs()
 end)
 
-Library:Notify("hieutrung doggy + Webhook loaded! User: " .. tostring(localPlayer.UserId), 4)
+Library:Notify("hieutrung doggy + Fixed Best Dungeon loaded!", 4)
 print("Loaded successfully — configs at: " .. ConfigRoot)
