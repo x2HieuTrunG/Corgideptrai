@@ -1,5 +1,4 @@
-// hieutrung 
-(async function autoRedeemDeltaForceV42() {
+(async function autoRedeemDeltaForceV43() {
     const rawCodes = [
         "PWC260419S65", "DFELEVATE16", "DFAWAKEN56", "PWC260418S84", "PWC260418S11",
         "PWC260418S72", "PWC260419S67", "PWC260419S84", "DFCC0PNOW111", "DFCC0PGIST88",
@@ -65,30 +64,35 @@
     const allCodes = Array.from(new Set(rawCodes));
     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-    // Lắng nghe API ngầm để bắt kết quả chính xác 100%
-    let lastNetworkMsg = null;
-    if (!window._dfHooked) {
-        window._dfHooked = true;
+    
+    function isVisible(el) {
+        if (!el) return false;
+        const style = window.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+    }
+
+    
+    let lastNetworkData = null;
+    if (!window._dfHookedV43) {
+        window._dfHookedV43 = true;
         const origFetch = window.fetch;
         window.fetch = async function(...args) {
             const res = await origFetch.apply(this, args);
             try {
                 const clone = res.clone();
                 const json = await clone.json();
-                const msg = json.msg || json.message || json.info || json.ret_msg || (typeof json.data === 'string' ? json.data : null);
-                if (msg) lastNetworkMsg = String(msg);
+                lastNetworkData = json;
             } catch (e) {}
             return res;
         };
 
-        const origOpen = XMLHttpRequest.prototype.open;
         const origSend = XMLHttpRequest.prototype.send;
         XMLHttpRequest.prototype.send = function(...args) {
             this.addEventListener('load', function() {
                 try {
-                    const json = JSON.parse(this.responseText);
-                    const msg = json.msg || json.message || json.info || json.ret_msg || (typeof json.data === 'string' ? json.data : null);
-                    if (msg) lastNetworkMsg = String(msg);
+                    lastNetworkData = JSON.parse(this.responseText);
                 } catch (e) {}
             });
             return origSend.apply(this, args);
@@ -97,13 +101,13 @@
 
     console.clear();
     console.log(
-        `Auto Redeemed by x2hieutrung`,
+        `Auto Redeemed code by x2hieutrung`,
         'color: #00ff9d; font-weight: bold; font-size: 14px'
     );
 
     function findInput() {
         return Array.from(document.querySelectorAll('input')).find(el => {
-            if (!el.offsetParent) return false;
+            if (!isVisible(el)) return false;
             const type = (el.getAttribute('type') || 'text').toLowerCase();
             return ['text', 'search', ''].includes(type);
         });
@@ -114,7 +118,7 @@
         const inputRect = input.getBoundingClientRect();
 
         const all = Array.from(document.querySelectorAll('button, [role="button"], div, a, span')).filter(el => {
-            if (!el.offsetParent) return false;
+            if (!isVisible(el)) return false;
             const txt = (el.innerText || el.textContent || '').trim();
             return (txt === 'Đổi' || txt === 'ĐỔI' || txt === 'Redeem') && el.children.length <= 2;
         });
@@ -175,9 +179,9 @@
 
     function closeModal() {
         const buttons = Array.from(document.querySelectorAll('button, [role="button"], div, a, span')).filter(el => {
-            if (!el.offsetParent) return false;
+            if (!isVisible(el)) return false;
             const txt = (el.innerText || el.textContent || '').trim();
-            return ['OK', 'Xác nhận', 'Đóng', 'x', 'X', 'Close', 'Confirm', 'Nhận'].includes(txt);
+            return ['OK', 'Xác nhận', 'Đóng', 'x', 'X', 'Close', 'Confirm', 'Nhận', 'Đồng ý'].includes(txt);
         });
         if (buttons.length > 0) {
             buttons[buttons.length - 1].click();
@@ -186,21 +190,21 @@
         return false;
     }
 
-    
+    // Đọc thông báo trên giao diện (sử dụng hàm isVisible thay cho offsetParent)
     const noticeSelectors = [
         '.modal', '.dialog', '.toast', '.popup', '.tip', '.tips', '.notice', '.alert',
         '[role="dialog"]', '[class*="modal"]', '[class*="dialog"]', '[class*="pop"]',
         '[class*="toast"]', '[class*="tip"]', '[class*="award"]', '[class*="reward"]',
-        '[class*="result"]', '[class*="gift"]', '.sweet-alert', '.swal2-container'
+        '[class*="result"]', '[class*="gift"]', '.sweet-alert', '.swal2-container', '.swal2-popup'
     ];
 
     function getDomNoticeMessage() {
         for (const sel of noticeSelectors) {
             const elements = document.querySelectorAll(sel);
             for (const el of elements) {
-                if (el.offsetParent !== null) {
+                if (isVisible(el)) {
                     const txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
-                    if (txt && txt.length > 2 && txt.length < 300 && !txt.includes('DELTA FORCE ĐỔI GIFTCODE')) {
+                    if (txt && txt.length > 2 && txt.length < 350 && !txt.includes('DELTA FORCE ĐỔI GIFTCODE')) {
                         return txt;
                     }
                 }
@@ -209,16 +213,31 @@
         return '';
     }
 
-    function checkStatus(msg) {
-        if (!msg) return { status: 'TIMEOUT', reason: 'Không nhận được phản hồi' };
+    function checkStatus(msg, apiData) {
+        // 1. Kiểm tra trực tiếp API nếu có
+        if (apiData) {
+            const code = apiData.code ?? apiData.ret ?? apiData.status ?? apiData.errcode;
+            if (code === 0 || code === 200 || apiData.success === true) {
+                return { status: 'SUCCESS', reason: apiData.msg || apiData.message || 'Thành công (API Code: 0)' };
+            }
+        }
+
+        if (!msg) return { status: 'TIMEOUT', reason: 'Không nhận được thông báo phản hồi' };
         const lower = msg.toLowerCase();
         
         if (lower.includes('thao tác quá nhanh') || lower.includes('thử lại sau') || lower.includes('frequent')) {
             return { status: 'RATE_LIMIT', reason: msg };
         }
 
-        const successKeywords = ['thành công', 'chúc mừng', 'phần thưởng', 'hòm thư', 'success', 'vật phẩm', 'nhận được'];
-        const failKeywords = ['không hợp lệ', 'hết hạn', 'đã sử dụng', 'đã dùng', 'thất bại', 'không tồn tại', 'fail', 'invalid', 'expired', 'lỗi', 'error', 'quá số lần', 'chưa mở'];
+        const successKeywords = [
+            'thành công', 'chúc mừng', 'phần thưởng', 'hòm thư', 'hộp thư', 'success',
+            'vật phẩm', 'nhận được', 'đã gửi', 'đổi quà thành công', 'congratulation'
+        ];
+        const failKeywords = [
+            'không hợp lệ', 'hết hạn', 'đã sử dụng', 'đã dùng', 'thất bại', 'không tồn tại',
+            'fail', 'invalid', 'expired', 'lỗi', 'error', 'quá số lần', 'chưa mở',
+            'đã nhận rồi', 'đã tham gia', 'không chính xác', 'sai', 'tài khoản đã nhận'
+        ];
 
         for (const kw of successKeywords) {
             if (lower.includes(kw)) return { status: 'SUCCESS', reason: msg };
@@ -226,7 +245,9 @@
         for (const kw of failKeywords) {
             if (lower.includes(kw)) return { status: 'FAIL', reason: msg };
         }
-        return { status: 'UNKNOWN', reason: msg };
+        
+        // Nếu không khớp từ khóa thì vẫn in thẳng nội dung ra để người dùng xem
+        return { status: 'NOTICE', reason: msg };
     }
 
     const inputEl = findInput();
@@ -241,7 +262,7 @@
 
     for (let i = 0; i < allCodes.length; i++) {
         const code = allCodes[i];
-        lastNetworkMsg = null; // Reset biến lắng nghe API
+        lastNetworkData = null;
 
         const currentInput = findInput() || inputEl;
         const currentBtn = findExactDoiBtn(currentInput) || btnEl;
@@ -250,30 +271,28 @@
         setInputValue(currentInput, code);
         await sleep(100);
 
-       
+        
         simulateRealClick(currentBtn);
         currentInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
 
         
-        
         let rawMessage = '';
-        for (let wait = 0; wait < 60; wait++) { // 60 * 80ms = 4.8 giây
+        for (let wait = 0; wait < 50; wait++) {
             await sleep(80);
             
-            
-            if (lastNetworkMsg) {
-                rawMessage = lastNetworkMsg;
-                break;
+            if (lastNetworkData) {
+                rawMessage = lastNetworkData.msg || lastNetworkData.message || lastNetworkData.ret_msg || '';
+                if (rawMessage || lastNetworkData.code === 0 || lastNetworkData.ret === 0) break;
             }
-            
+
             rawMessage = getDomNoticeMessage();
             if (rawMessage) break;
         }
 
-        const result = checkStatus(rawMessage);
+        const result = checkStatus(rawMessage, lastNetworkData);
 
         if (result.status === 'RATE_LIMIT') {
-            console.warn(`⏳ [${code}] Thao tác quá nhanh, chờ 2s rồi thử lại mã này...`);
+            console.warn(`⏳ [${code}] Thao tác quá nhanh, tạm nghỉ 2s rồi thử lại...`);
             closeModal();
             await sleep(2000);
             i--;
@@ -283,13 +302,18 @@
         if (result.status === 'SUCCESS') {
             successCount++;
             console.log(
-                `%c[${i + 1}/${allCodes.length}] THÀNH CÔNG ✅ : ${code} -> ${result.reason}`,
+                `%c[${i + 1}/${allCodes.length}] Success  : ${code} -> ${result.reason}`,
                 'background: #003311; color: #00ff66; font-size: 13px; font-weight: bold; padding: 2px 6px; border-radius: 3px;'
             );
         } else if (result.status === 'TIMEOUT') {
             console.log(
-                `%c[${i + 1}/${allCodes.length}] TIMEOUT  ⚠️ : ${code} -> Server không phản hồi sau 5s`,
-                'color: #ffbb00; font-size: 12px;'
+                `%c[${i + 1}/${allCodes.length}] TIMEOUT  ⚠️ : ${code} -> Không có thông báo sau 4s`,
+                'color: #ffaa00; font-size: 12px;'
+            );
+        } else if (result.status === 'NOTICE') {
+            console.log(
+                `%c[${i + 1}/${allCodes.length}] PHẢN HỒI  ℹ️ : ${code} -> "${result.reason}"`,
+                'color: #00ddff; font-size: 12px;'
             );
         } else {
             console.log(
@@ -304,7 +328,7 @@
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(
-        `%c🎉 Hoàn tất! Nhận thành công: ${successCount} mã trong ${duration}s.`,
+        `%cRedeemed: ${successCount} mã trong ${duration}s.`,
         'color: #00ff9d; font-size: 15px; font-weight: bold; margin-top: 10px;'
     );
 })();
