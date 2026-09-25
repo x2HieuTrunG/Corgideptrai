@@ -1,9 +1,4 @@
 
- * Script tự động nhập Giftcode Delta Force - Bản V3 (Fix triệt để lỗi không bấm nút Đổi)
- * - Tự động cập nhật Vue/React v-model (tránh lỗi web tưởng ô nhập trống)
- * - Định vị chính xác nút "Đổi" xanh lá nằm cạnh ô input bằng toạ độ màn hình (getBoundingClientRect)
- * - Giả lập click chuột thật 100% (PointerDown -> MouseDown -> PointerUp -> MouseUp -> Click)
- */
 (async function autoRedeemDeltaForceV3() {
     const allCodes = [
         "PWC260419S65", "DFELEVATE16", "DFAWAKEN56", "PWC260418S84", "PWC260418S11",
