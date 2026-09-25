@@ -337,7 +337,7 @@
             );
         }
 
-        // 5. Nghỉ 600ms để web reset trạng thái nút Đổi
+        /
         await sleep(600);
     }
 
