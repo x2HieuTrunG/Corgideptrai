@@ -1,4 +1,4 @@
-(async function autoRedeemDeltaForceV43() {
+(async function autoRedeemDeltaForceV44() {
     const rawCodes = [
         "PWC260419S65", "DFELEVATE16", "DFAWAKEN56", "PWC260418S84", "PWC260418S11",
         "PWC260418S72", "PWC260419S67", "PWC260419S84", "DFCC0PNOW111", "DFCC0PGIST88",
@@ -64,7 +64,6 @@
     const allCodes = Array.from(new Set(rawCodes));
     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-    
     function isVisible(el) {
         if (!el) return false;
         const style = window.getComputedStyle(el);
@@ -74,34 +73,48 @@
     }
 
     
-    let lastNetworkData = null;
-    if (!window._dfHookedV43) {
-        window._dfHookedV43 = true;
+    let currentProcessingCode = '';
+    let matchedApiData = null;
+
+    if (!window._dfHookedV44) {
+        window._dfHookedV44 = true;
         const origFetch = window.fetch;
-        window.fetch = async function(...args) {
-            const res = await origFetch.apply(this, args);
+        window.fetch = async function(resource, init) {
+            const res = await origFetch.apply(this, arguments);
             try {
-                const clone = res.clone();
-                const json = await clone.json();
-                lastNetworkData = json;
+                const url = typeof resource === 'string' ? resource : resource?.url || '';
+                const body = init?.body ? String(init.body) : '';
+                
+                if (currentProcessingCode && (url.includes(currentProcessingCode) || body.includes(currentProcessingCode))) {
+                    const clone = res.clone();
+                    matchedApiData = await clone.json();
+                }
             } catch (e) {}
             return res;
         };
 
+        const origOpen = XMLHttpRequest.prototype.open;
         const origSend = XMLHttpRequest.prototype.send;
-        XMLHttpRequest.prototype.send = function(...args) {
+        XMLHttpRequest.prototype.open = function(method, url) {
+            this._reqUrl = url;
+            return origOpen.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function(body) {
+            const bodyStr = body ? String(body) : '';
             this.addEventListener('load', function() {
                 try {
-                    lastNetworkData = JSON.parse(this.responseText);
+                    if (currentProcessingCode && (String(this._reqUrl).includes(currentProcessingCode) || bodyStr.includes(currentProcessingCode))) {
+                        matchedApiData = JSON.parse(this.responseText);
+                    }
                 } catch (e) {}
             });
-            return origSend.apply(this, args);
+            return origSend.apply(this, arguments);
         };
     }
 
     console.clear();
     console.log(
-        `Auto Redeemed code by x2hieutrung`,
+        `Auto redeem by x2hieutrung...`,
         'color: #00ff9d; font-weight: bold; font-size: 14px'
     );
 
@@ -177,20 +190,20 @@
         }
     }
 
-    function closeModal() {
+    
+    async function closeAllModalsAndWait() {
         const buttons = Array.from(document.querySelectorAll('button, [role="button"], div, a, span')).filter(el => {
             if (!isVisible(el)) return false;
             const txt = (el.innerText || el.textContent || '').trim();
             return ['OK', 'Xác nhận', 'Đóng', 'x', 'X', 'Close', 'Confirm', 'Nhận', 'Đồng ý'].includes(txt);
         });
-        if (buttons.length > 0) {
-            buttons[buttons.length - 1].click();
-            return true;
+        for (const b of buttons) {
+            try { b.click(); } catch (e) {}
         }
-        return false;
+        // Đợi CSS transition mờ hẳn
+        await sleep(350);
     }
 
-    // Đọc thông báo trên giao diện (sử dụng hàm isVisible thay cho offsetParent)
     const noticeSelectors = [
         '.modal', '.dialog', '.toast', '.popup', '.tip', '.tips', '.notice', '.alert',
         '[role="dialog"]', '[class*="modal"]', '[class*="dialog"]', '[class*="pop"]',
@@ -214,11 +227,14 @@
     }
 
     function checkStatus(msg, apiData) {
-        // 1. Kiểm tra trực tiếp API nếu có
+        // Kiểm tra API đích danh của code này
         if (apiData) {
-            const code = apiData.code ?? apiData.ret ?? apiData.status ?? apiData.errcode;
-            if (code === 0 || code === 200 || apiData.success === true) {
-                return { status: 'SUCCESS', reason: apiData.msg || apiData.message || 'Thành công (API Code: 0)' };
+            const code = apiData.code ?? apiData.ret ?? apiData.errcode;
+            if (code === 0 || apiData.status === 'success' || apiData.success === true) {
+                return { status: 'SUCCESS', reason: apiData.msg || apiData.message || 'Thành công (API Verified)' };
+            }
+            if (code !== undefined && code !== 0) {
+                return { status: 'FAIL', reason: apiData.msg || apiData.message || `Lỗi API (Code: ${code})` };
             }
         }
 
@@ -229,15 +245,9 @@
             return { status: 'RATE_LIMIT', reason: msg };
         }
 
-        const successKeywords = [
-            'thành công', 'chúc mừng', 'phần thưởng', 'hòm thư', 'hộp thư', 'success',
-            'vật phẩm', 'nhận được', 'đã gửi', 'đổi quà thành công', 'congratulation'
-        ];
-        const failKeywords = [
-            'không hợp lệ', 'hết hạn', 'đã sử dụng', 'đã dùng', 'thất bại', 'không tồn tại',
-            'fail', 'invalid', 'expired', 'lỗi', 'error', 'quá số lần', 'chưa mở',
-            'đã nhận rồi', 'đã tham gia', 'không chính xác', 'sai', 'tài khoản đã nhận'
-        ];
+        
+        const successKeywords = ['thành công', 'chúc mừng', 'phần thưởng đã', 'gửi vào hòm thư', 'gửi vào hộp thư', 'success', 'nhận quà thành công'];
+        const failKeywords = ['không hợp lệ', 'hết hạn', 'đã sử dụng', 'đã dùng', 'thất bại', 'không tồn tại', 'fail', 'invalid', 'expired', 'lỗi', 'error', 'quá số lần', 'chưa mở', 'đã nhận rồi', 'đã tham gia', 'không chính xác', 'sai', 'tài khoản đã nhận'];
 
         for (const kw of successKeywords) {
             if (lower.includes(kw)) return { status: 'SUCCESS', reason: msg };
@@ -246,7 +256,6 @@
             if (lower.includes(kw)) return { status: 'FAIL', reason: msg };
         }
         
-        // Nếu không khớp từ khóa thì vẫn in thẳng nội dung ra để người dùng xem
         return { status: 'NOTICE', reason: msg };
     }
 
@@ -262,14 +271,20 @@
 
     for (let i = 0; i < allCodes.length; i++) {
         const code = allCodes[i];
-        lastNetworkData = null;
+        
+        
+        await closeAllModalsAndWait();
+
+        
+        currentProcessingCode = code;
+        matchedApiData = null;
 
         const currentInput = findInput() || inputEl;
         const currentBtn = findExactDoiBtn(currentInput) || btnEl;
 
         
         setInputValue(currentInput, code);
-        await sleep(100);
+        await sleep(120);
 
         
         simulateRealClick(currentBtn);
@@ -277,24 +292,24 @@
 
         
         let rawMessage = '';
-        for (let wait = 0; wait < 50; wait++) {
+        for (let wait = 0; wait < 45; wait++) { // Tối đa 3.6s
             await sleep(80);
             
-            if (lastNetworkData) {
-                rawMessage = lastNetworkData.msg || lastNetworkData.message || lastNetworkData.ret_msg || '';
-                if (rawMessage || lastNetworkData.code === 0 || lastNetworkData.ret === 0) break;
+            if (matchedApiData) {
+                rawMessage = matchedApiData.msg || matchedApiData.message || '';
+                break;
             }
 
             rawMessage = getDomNoticeMessage();
             if (rawMessage) break;
         }
 
-        const result = checkStatus(rawMessage, lastNetworkData);
+        const result = checkStatus(rawMessage, matchedApiData);
 
         if (result.status === 'RATE_LIMIT') {
-            console.warn(`⏳ [${code}] Thao tác quá nhanh, tạm nghỉ 2s rồi thử lại...`);
-            closeModal();
-            await sleep(2000);
+            console.warn(`⏳ [${code}] Web bắt chờ, tạm nghỉ 2.5s rồi thử lại mã này...`);
+            await closeAllModalsAndWait();
+            await sleep(2500);
             i--;
             continue;
         }
@@ -302,17 +317,17 @@
         if (result.status === 'SUCCESS') {
             successCount++;
             console.log(
-                `%c[${i + 1}/${allCodes.length}] Success  : ${code} -> ${result.reason}`,
+                `%c[${i + 1}/${allCodes.length}] THÀNH CÔNG ✅ : ${code} -> ${result.reason}`,
                 'background: #003311; color: #00ff66; font-size: 13px; font-weight: bold; padding: 2px 6px; border-radius: 3px;'
             );
         } else if (result.status === 'TIMEOUT') {
             console.log(
-                `%c[${i + 1}/${allCodes.length}] TIMEOUT  ⚠️ : ${code} -> Không có thông báo sau 4s`,
+                `%c[${i + 1}/${allCodes.length}] TIMEOUT  ⚠️ : ${code} -> Không có thông báo sau 3.6s`,
                 'color: #ffaa00; font-size: 12px;'
             );
         } else if (result.status === 'NOTICE') {
             console.log(
-                `%c[${i + 1}/${allCodes.length}] PHẢN HỒI  ℹ️ : ${code} -> "${result.reason}"`,
+                `%c[${i + 1}/${allCodes.length}] THÔNG BÁO ℹ️ : ${code} -> "${result.reason}"`,
                 'color: #00ddff; font-size: 12px;'
             );
         } else {
@@ -322,13 +337,13 @@
             );
         }
 
-        closeModal();
-        await sleep(200);
+        // 5. Nghỉ 600ms để web reset trạng thái nút Đổi
+        await sleep(600);
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(
-        `%cRedeemed: ${successCount} mã trong ${duration}s.`,
+        `%c🎉 Hoàn tất! Nhận thành công thực tế: ${successCount} mã trong ${duration}s.`,
         'color: #00ff9d; font-size: 15px; font-weight: bold; margin-top: 10px;'
     );
 })();
