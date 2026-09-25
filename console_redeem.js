@@ -1,6 +1,6 @@
-
-(async function autoRedeemDeltaForceV3() {
-    const allCodes = [
+// hieutrung 
+(async function autoRedeemDeltaForceV42() {
+    const rawCodes = [
         "PWC260419S65", "DFELEVATE16", "DFAWAKEN56", "PWC260418S84", "PWC260418S11",
         "PWC260418S72", "PWC260419S67", "PWC260419S84", "DFCC0PNOW111", "DFCC0PGIST88",
         "DFCC0PWOR1D", "DFCC0PTOBE03", "DFCC0PPL4Y3R5", "DFOS5260405869", "DFOS5260405B58",
@@ -62,49 +62,69 @@
         "XufJgVxYrFctM5heBT3B", "DFOSB6T3WZ", "DFOS9R2HXC", "DFOS3Y8KLM"
     ];
 
+    const allCodes = Array.from(new Set(rawCodes));
     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
+    // Lắng nghe API ngầm để bắt kết quả chính xác 100%
+    let lastNetworkMsg = null;
+    if (!window._dfHooked) {
+        window._dfHooked = true;
+        const origFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const res = await origFetch.apply(this, args);
+            try {
+                const clone = res.clone();
+                const json = await clone.json();
+                const msg = json.msg || json.message || json.info || json.ret_msg || (typeof json.data === 'string' ? json.data : null);
+                if (msg) lastNetworkMsg = String(msg);
+            } catch (e) {}
+            return res;
+        };
+
+        const origOpen = XMLHttpRequest.prototype.open;
+        const origSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function(...args) {
+            this.addEventListener('load', function() {
+                try {
+                    const json = JSON.parse(this.responseText);
+                    const msg = json.msg || json.message || json.info || json.ret_msg || (typeof json.data === 'string' ? json.data : null);
+                    if (msg) lastNetworkMsg = String(msg);
+                } catch (e) {}
+            });
+            return origSend.apply(this, args);
+        };
+    }
+
     console.clear();
-    console.log('Auto Redeem by x2hieutrung', 'color: #00ff9d; font-weight: bold; font-size: 14px');
+    console.log(
+        `%c[Delta Force V4.2 Pro] Sẵn sàng nạp ${allCodes.length} mã (Hỗ trợ chờ server tải quà)...`,
+        'color: #00ff9d; font-weight: bold; font-size: 14px'
+    );
 
-    
     function findInput() {
-        return Array.from(document.querySelectorAll('input')).find(el => el.offsetParent !== null);
+        return Array.from(document.querySelectorAll('input')).find(el => {
+            if (!el.offsetParent) return false;
+            const type = (el.getAttribute('type') || 'text').toLowerCase();
+            return ['text', 'search', ''].includes(type);
+        });
     }
 
-    
-    function setInputValue(input, val) {
-        input.focus();
-        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-        if (nativeSetter) {
-            nativeSetter.call(input, val);
-        } else {
-            input.value = val;
-        }
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    
     function findExactDoiBtn(input) {
+        if (!input) return null;
         const inputRect = input.getBoundingClientRect();
 
-        
-        const all = Array.from(document.querySelectorAll('*')).filter(el => {
+        const all = Array.from(document.querySelectorAll('button, [role="button"], div, a, span')).filter(el => {
             if (!el.offsetParent) return false;
             const txt = (el.innerText || el.textContent || '').trim();
             return (txt === 'Đổi' || txt === 'ĐỔI' || txt === 'Redeem') && el.children.length <= 2;
         });
 
-        
         const rightSide = all.find(el => {
             const r = el.getBoundingClientRect();
-            return r.left >= inputRect.right - 10 && Math.abs(r.top - inputRect.top) < 60;
+            return r.left >= inputRect.right - 15 && Math.abs(r.top - inputRect.top) < 70;
         });
-
         if (rightSide) return rightSide;
 
-        
         const parent = input.closest('form') || input.parentElement?.parentElement || input.parentElement;
         if (parent) {
             const inside = Array.from(parent.querySelectorAll('*')).find(el => {
@@ -114,22 +134,30 @@
             if (inside) return inside;
         }
 
-        return all[0];
+        return all[0] || null;
     }
 
-    
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    function setInputValue(input, val) {
+        input.focus();
+        if (nativeSetter) {
+            nativeSetter.call(input, val);
+        } else {
+            input.value = val;
+        }
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
     function simulateRealClick(element) {
         if (!element) return;
         const rect = element.getBoundingClientRect();
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
-
         const eventParams = {
             bubbles: true,
             cancelable: true,
             view: window,
-            clientX: x,
-            clientY: y,
+            clientX: rect.left + rect.width / 2,
+            clientY: rect.top + rect.height / 2,
             button: 0,
             buttons: 1
         };
@@ -141,36 +169,38 @@
             target.dispatchEvent(new PointerEvent('pointerup', { ...eventParams, buttons: 0 }));
             target.dispatchEvent(new MouseEvent('mouseup', { ...eventParams, buttons: 0 }));
             target.dispatchEvent(new MouseEvent('click', { ...eventParams, buttons: 0 }));
-            if (typeof target.click === 'function') {
-                target.click();
-            }
+            if (typeof target.click === 'function') target.click();
         }
     }
 
-    
     function closeModal() {
-        const buttons = Array.from(document.querySelectorAll('button, div, a, span')).filter(el => {
+        const buttons = Array.from(document.querySelectorAll('button, [role="button"], div, a, span')).filter(el => {
+            if (!el.offsetParent) return false;
             const txt = (el.innerText || el.textContent || '').trim();
-            return (txt === 'OK' || txt === 'Xác nhận' || txt === 'Đóng' || txt === 'x' || txt === 'X' || txt === 'Close') && el.offsetParent !== null;
+            return ['OK', 'Xác nhận', 'Đóng', 'x', 'X', 'Close', 'Confirm', 'Nhận'].includes(txt);
         });
         if (buttons.length > 0) {
             buttons[buttons.length - 1].click();
+            return true;
         }
+        return false;
     }
 
     
-    function getNoticeMessage() {
-        const selectors = [
-            '.modal', '.dialog', '.toast', '.popup', '.tip', '.tips', '.notice', '.alert',
-            '[role="dialog"]', '[class*="modal"]', '[class*="dialog"]', '[class*="pop"]',
-            '[class*="toast"]', '[class*="mask"]', '[class*="tip"]', '[class*="notice"]'
-        ];
-        for (const sel of selectors) {
+    const noticeSelectors = [
+        '.modal', '.dialog', '.toast', '.popup', '.tip', '.tips', '.notice', '.alert',
+        '[role="dialog"]', '[class*="modal"]', '[class*="dialog"]', '[class*="pop"]',
+        '[class*="toast"]', '[class*="tip"]', '[class*="award"]', '[class*="reward"]',
+        '[class*="result"]', '[class*="gift"]', '.sweet-alert', '.swal2-container'
+    ];
+
+    function getDomNoticeMessage() {
+        for (const sel of noticeSelectors) {
             const elements = document.querySelectorAll(sel);
             for (const el of elements) {
                 if (el.offsetParent !== null) {
                     const txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
-                    if (txt && txt.length < 250 && !txt.includes('DELTA FORCE ĐỔI GIFTCODE')) {
+                    if (txt && txt.length > 2 && txt.length < 300 && !txt.includes('DELTA FORCE ĐỔI GIFTCODE')) {
                         return txt;
                     }
                 }
@@ -179,83 +209,102 @@
         return '';
     }
 
-    
     function checkStatus(msg) {
-        if (!msg) return { status: 'FAIL', reason: 'Không nhận được phản hồi từ server' };
+        if (!msg) return { status: 'TIMEOUT', reason: 'Không nhận được phản hồi' };
         const lower = msg.toLowerCase();
-        const failKeywords = ['không hợp lệ', 'hết hạn', 'đã sử dụng', 'đã được', 'thất bại', 'không tồn tại', 'fail', 'invalid', 'expired', 'lỗi', 'error', 'quá số lần', 'thử lại'];
-        const successKeywords = ['thành công', 'chúc mừng', 'phần thưởng', 'hòm thư', 'success'];
-
-        for (const kw of failKeywords) {
-            if (lower.includes(kw)) return { status: 'FAIL', reason: msg };
+        
+        if (lower.includes('thao tác quá nhanh') || lower.includes('thử lại sau') || lower.includes('frequent')) {
+            return { status: 'RATE_LIMIT', reason: msg };
         }
+
+        const successKeywords = ['thành công', 'chúc mừng', 'phần thưởng', 'hòm thư', 'success', 'vật phẩm', 'nhận được'];
+        const failKeywords = ['không hợp lệ', 'hết hạn', 'đã sử dụng', 'đã dùng', 'thất bại', 'không tồn tại', 'fail', 'invalid', 'expired', 'lỗi', 'error', 'quá số lần', 'chưa mở'];
+
         for (const kw of successKeywords) {
             if (lower.includes(kw)) return { status: 'SUCCESS', reason: msg };
         }
-        return { status: 'FAIL', reason: msg };
+        for (const kw of failKeywords) {
+            if (lower.includes(kw)) return { status: 'FAIL', reason: msg };
+        }
+        return { status: 'UNKNOWN', reason: msg };
     }
 
-    
-    const testInput = findInput();
-    if (!testInput) {
-        console.error('No Found');
+    const inputEl = findInput();
+    const btnEl = findExactDoiBtn(inputEl);
+    if (!inputEl || !btnEl) {
+        console.error('❌ Không tìm thấy ô nhập hoặc nút Đổi!');
         return;
     }
-    const testBtn = findExactDoiBtn(testInput);
-    if (!testBtn) {
-        console.error('No Found');
-        return;
-    }
 
-    console.log('Found just wait', 'color: #00ff9d; font-weight: bold;');
+    let successCount = 0;
+    const startTime = Date.now();
 
-    
     for (let i = 0; i < allCodes.length; i++) {
         const code = allCodes[i];
+        lastNetworkMsg = null; // Reset biến lắng nghe API
+
+        const currentInput = findInput() || inputEl;
+        const currentBtn = findExactDoiBtn(currentInput) || btnEl;
 
         
-        closeModal();
-        await sleep(250);
+        setInputValue(currentInput, code);
+        await sleep(100);
 
-        const input = findInput();
-        const btn = findExactDoiBtn(input);
-
-        
-        setInputValue(input, code);
-        await sleep(150);
+       
+        simulateRealClick(currentBtn);
+        currentInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
 
         
-        simulateRealClick(btn);
-
-        
-        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-
         
         let rawMessage = '';
-        for (let wait = 0; wait < 12; wait++) {
-            await sleep(300);
-            rawMessage = getNoticeMessage();
+        for (let wait = 0; wait < 60; wait++) { // 60 * 80ms = 4.8 giây
+            await sleep(80);
+            
+            
+            if (lastNetworkMsg) {
+                rawMessage = lastNetworkMsg;
+                break;
+            }
+            
+            rawMessage = getDomNoticeMessage();
             if (rawMessage) break;
         }
 
         const result = checkStatus(rawMessage);
 
+        if (result.status === 'RATE_LIMIT') {
+            console.warn(`⏳ [${code}] Thao tác quá nhanh, chờ 2s rồi thử lại mã này...`);
+            closeModal();
+            await sleep(2000);
+            i--;
+            continue;
+        }
+
         if (result.status === 'SUCCESS') {
+            successCount++;
             console.log(
-                `%c[${i + 1}/${allCodes.length}] SUCCESS ✅ : ${code} -> ${result.reason}`,
+                `%c[${i + 1}/${allCodes.length}] THÀNH CÔNG ✅ : ${code} -> ${result.reason}`,
                 'background: #003311; color: #00ff66; font-size: 13px; font-weight: bold; padding: 2px 6px; border-radius: 3px;'
+            );
+        } else if (result.status === 'TIMEOUT') {
+            console.log(
+                `%c[${i + 1}/${allCodes.length}] TIMEOUT  ⚠️ : ${code} -> Server không phản hồi sau 5s`,
+                'color: #ffbb00; font-size: 12px;'
             );
         } else {
             console.log(
-                `%c[${i + 1}/${allCodes.length}] FAIL    ❌ : ${code} -> ${result.reason}`,
+                `%c[${i + 1}/${allCodes.length}] THẤT BẠI   ❌ : ${code} -> ${result.reason}`,
                 'color: #ff5555; font-size: 12px;'
             );
         }
 
-        
         closeModal();
-        await sleep(600);
+        await sleep(200);
     }
 
-    console.log('Redeem completed all codes', 'color: #00ff9d; font-size: 15px; font-weight: bold;');
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(
+        `%c🎉 Hoàn tất! Nhận thành công: ${successCount} mã trong ${duration}s.`,
+        'color: #00ff9d; font-size: 15px; font-weight: bold; margin-top: 10px;'
+    );
 })();
