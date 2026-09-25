@@ -97,7 +97,7 @@
 
     console.clear();
     console.log(
-        `%c[Delta Force V4.2 Pro] Sẵn sàng nạp ${allCodes.length} mã (Hỗ trợ chờ server tải quà)...`,
+        `Auto Redeemed by x2hieutrung`,
         'color: #00ff9d; font-weight: bold; font-size: 14px'
     );
 
