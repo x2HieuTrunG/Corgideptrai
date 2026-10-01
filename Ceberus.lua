@@ -1,6 +1,4 @@
--- Deobfuscated by angelofthenorth
--- Detected obfuscation: Luraph v14
--- Local names are inferred from use (the original names are not in the bytecode)
+
 
 local n2 = 586299883
 local n3 = 276649242
