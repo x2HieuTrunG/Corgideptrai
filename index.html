@@ -1,281 +1,1157 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <title>Raw Lua Script</title>
-    <style>
-        /* CSS này mô phỏng lại giao diện đọc file raw mặc định của Chrome */
-        body {
-            background-color: white;
-            color: black;
-            margin: 0;
-            padding: 8px;
-        }
-        pre {
-            font-family: monospace;
-            font-size: 13px;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chúc Mừng 20/10 - Dành Tặng Nhã Thi Của Anh 💖</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #ff4b72;
+      --primary-soft: #ffe4e9;
+      --secondary: #ff758c;
+      --accent: #ffb88c;
+      --card-bg: rgba(255, 255, 255, 0.88);
+      --card-border: rgba(255, 255, 255, 0.95);
+      --text-dark: #3a2e39;
+      --text-muted: #7d6b79;
+      --rose: #e83e8c;
+      --shadow: 0 15px 35px rgba(255, 94, 125, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(135deg, #ffeef2 0%, #ffe0e9 40%, #ffd6e0 70%, #ffc2d1 100%);
+      color: var(--text-dark);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Falling Petals & Hearts Canvas */
+    #petals-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Floating Music Toggle */
+    .audio-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid #ff758c;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ff4b72;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 75, 114, 0.3);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .audio-btn:hover {
+      transform: scale(1.1) rotate(10deg);
+    }
+
+    .audio-btn.playing {
+      animation: pulse-music 1.8s infinite;
+    }
+
+    @keyframes pulse-music {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 75, 114, 0.5); }
+      50% { box-shadow: 0 0 0 14px rgba(255, 75, 114, 0); }
+    }
+
+    /* Envelope Opening Overlay */
+    #envelope-screen {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #fff0f3 10%, #ffccd5 90%);
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    #envelope-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .envelope-box {
+      cursor: pointer;
+      text-align: center;
+      transition: transform 0.4s ease;
+    }
+
+    .envelope-box:hover {
+      transform: translateY(-8px) scale(1.02);
+    }
+
+    .letter-envelope {
+      width: 240px;
+      height: 170px;
+      background: #ff5e7e;
+      border-radius: 12px;
+      position: relative;
+      margin: 0 auto 30px;
+      box-shadow: 0 20px 40px rgba(255, 75, 114, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .letter-envelope::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-left: 120px solid transparent;
+      border-right: 120px solid transparent;
+      border-top: 95px solid #ff3d63;
+      transform-origin: top;
+      transition: transform 0.6s ease;
+    }
+
+    .envelope-heart {
+      width: 58px;
+      height: 58px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      color: #ff4b72;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+      z-index: 2;
+      animation: heartbeat 1.3s infinite;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      14% { transform: scale(1.2); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.2); }
+      70% { transform: scale(1); }
+    }
+
+    .envelope-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 2.4rem;
+      color: #d81b60;
+      margin-bottom: 12px;
+    }
+
+    .envelope-subtitle {
+      font-size: 1.05rem;
+      color: #7a5c68;
+      background: rgba(255,255,255,0.7);
+      padding: 8px 22px;
+      border-radius: 30px;
+      display: inline-block;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    .tap-hint {
+      margin-top: 18px;
+      font-size: 0.9rem;
+      color: #ff4b72;
+      font-weight: 600;
+      letter-spacing: 1px;
+      animation: bounce 1.8s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-8px); }
+      60% { transform: translateY(-4px); }
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+      position: relative;
+      z-index: 20;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      margin-bottom: 45px;
+      padding-top: 15px;
+    }
+
+    .badge-2010 {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(45deg, #ff4b72, #ff758c);
+      color: #fff;
+      padding: 8px 22px;
+      border-radius: 50px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 6px 20px rgba(255, 75, 114, 0.35);
+      margin-bottom: 20px;
+    }
+
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.8rem;
+      line-height: 1.25;
+      color: #880e4f;
+      margin-bottom: 15px;
+    }
+
+    .hero-name {
+      font-family: 'Dancing Script', cursive;
+      font-size: 3.8rem;
+      color: #e91e63;
+      display: block;
+      margin-top: 5px;
+      text-shadow: 2px 2px 4px rgba(233, 30, 99, 0.15);
+      background: linear-gradient(120deg, #ff1493, #e91e63, #ff4081);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-quote {
+      font-size: 1.15rem;
+      font-style: italic;
+      color: #6a4c58;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Heart Card / Letter */
+    .letter-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 2px solid var(--card-border);
+      border-radius: 28px;
+      padding: 38px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 45px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .letter-card::before {
+      content: '❝';
+      position: absolute;
+      top: 15px;
+      left: 22px;
+      font-size: 5rem;
+      color: rgba(255, 117, 140, 0.15);
+      font-family: serif;
+      line-height: 1;
+    }
+
+    .letter-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .letter-header i {
+      font-size: 1.8rem;
+      color: #ff4b72;
+    }
+
+    .letter-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      color: #ad1457;
+    }
+
+    .letter-body {
+      font-size: 1.12rem;
+      line-height: 1.9;
+      color: #4a3844;
+      white-space: pre-line;
+      text-align: justify;
+    }
+
+    .letter-signature {
+      margin-top: 25px;
+      text-align: right;
+      font-family: 'Dancing Script', cursive;
+      font-size: 2rem;
+      color: #d81b60;
+    }
+
+    /* Romantic Photo Frame Section */
+    .photo-section {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border-radius: 28px;
+      padding: 32px;
+      border: 2px solid var(--card-border);
+      box-shadow: var(--shadow);
+      margin-bottom: 45px;
+      text-align: center;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.9rem;
+      color: #880e4f;
+      margin-bottom: 8px;
+    }
+
+    .section-sub {
+      color: var(--text-muted);
+      font-size: 0.98rem;
+      margin-bottom: 28px;
+    }
+
+    .polaroid-wrapper {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .polaroid-card {
+      background: #ffffff;
+      padding: 16px 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      width: 270px;
+      transform: rotate(-2deg);
+      transition: all 0.35s ease;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .polaroid-card:nth-child(2) {
+      transform: rotate(2deg);
+    }
+
+    .polaroid-card:hover {
+      transform: translateY(-8px) rotate(0deg) scale(1.03);
+      box-shadow: 0 18px 32px rgba(255, 75, 114, 0.25);
+    }
+
+    .polaroid-img-box {
+      width: 100%;
+      height: 250px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #ffd1dc, #ffebee);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .polaroid-img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .polaroid-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #ff5277;
+      gap: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .polaroid-placeholder i {
+      font-size: 2.4rem;
+    }
+
+    .polaroid-placeholder span {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .polaroid-caption {
+      margin-top: 14px;
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.5rem;
+      color: #c2185b;
+      font-weight: 700;
+    }
+
+    /* Reasons Why / Sweet Cards */
+    .reasons-section {
+      margin-bottom: 45px;
+    }
+
+    .reasons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .reason-card {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 8px 20px rgba(255, 94, 125, 0.12);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .reason-card:hover {
+      transform: translateY(-5px);
+      background: #ffffff;
+      box-shadow: 0 14px 28px rgba(255, 75, 114, 0.22);
+    }
+
+    .reason-icon {
+      width: 48px;
+      height: 48px;
+      background: #ffe3ea;
+      color: #ff4b72;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .reason-card h3 {
+      font-size: 1.15rem;
+      color: #880e4f;
+    }
+
+    .reason-card p {
+      font-size: 0.95rem;
+      color: #5c4b55;
+      line-height: 1.6;
+    }
+
+    /* Sweet Coupons for Nhã Thi */
+    .coupons-section {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border-radius: 28px;
+      padding: 34px 28px;
+      border: 2px solid var(--card-border);
+      box-shadow: var(--shadow);
+      margin-bottom: 45px;
+      text-align: center;
+    }
+
+    .coupons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .coupon-card {
+      background: #fff;
+      border: 2px dashed #ff8fa3;
+      border-radius: 16px;
+      padding: 20px 16px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+
+    .coupon-card:hover {
+      transform: scale(1.03);
+      border-color: #ff4b72;
+      box-shadow: 0 8px 20px rgba(255, 75, 114, 0.18);
+    }
+
+    .coupon-card.used {
+      opacity: 0.75;
+      background: #fdf2f4;
+      border-color: #a09297;
+    }
+
+    .coupon-card.used::after {
+      content: 'ĐÃ NHẬN';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-15deg);
+      border: 3px solid #ff4b72;
+      color: #ff4b72;
+      font-weight: 800;
+      font-size: 1.3rem;
+      padding: 4px 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      letter-spacing: 1px;
+    }
+
+    .coupon-title {
+      font-weight: 700;
+      color: #ad1457;
+      font-size: 1.05rem;
+      margin-bottom: 6px;
+    }
+
+    .coupon-desc {
+      font-size: 0.88rem;
+      color: #6c5a65;
+    }
+
+    .coupon-btn {
+      margin-top: 12px;
+      background: #ffe3ea;
+      color: #ff4b72;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .coupon-btn:hover {
+      background: #ff4b72;
+      color: #fff;
+    }
+
+    /* Wish generator / Interactive Heart Button */
+    .interactive-cta {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .heart-blast-btn {
+      background: linear-gradient(45deg, #ff4b72, #ff758c);
+      color: #fff;
+      font-family: 'Quicksand', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+      padding: 16px 36px;
+      border: none;
+      border-radius: 50px;
+      box-shadow: 0 10px 25px rgba(255, 75, 114, 0.4);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .heart-blast-btn:hover {
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 15px 30px rgba(255, 75, 114, 0.5);
+    }
+
+    .heart-blast-btn:active {
+      transform: translateY(2px) scale(0.98);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      color: #8c7380;
+      font-size: 0.95rem;
+    }
+
+    footer span.love {
+      color: #ff4b72;
+      animation: heartbeat 1.2s infinite;
+      display: inline-block;
+    }
+
+    /* Modal for Special Wish */
+    .wish-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .wish-modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 24px;
+      padding: 32px 28px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      transform: scale(0.85);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+    }
+
+    .wish-modal.active .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      background: #f0e6eb;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #7d6b79;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-heart-icon {
+      font-size: 3rem;
+      color: #ff4b72;
+      margin-bottom: 12px;
+      animation: heartbeat 1.3s infinite;
+    }
+
+    .modal-text {
+      font-size: 1.1rem;
+      line-height: 1.7;
+      color: #44333e;
+      margin-bottom: 20px;
+    }
+
+    .modal-btn {
+      background: #ff4b72;
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 75, 114, 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .hero-title {
+        font-size: 2.1rem;
+      }
+      .hero-name {
+        font-size: 3rem;
+      }
+      .letter-card {
+        padding: 26px 20px;
+      }
+      .letter-body {
+        font-size: 1.02rem;
+      }
+      .polaroid-card {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+  </style>
 </head>
 <body>
-<pre>
-local getG = getgenv().farm or {}
-local W_URL = getG.Webhook or ""
-local E_URL = "https://discord.com/api/webhooks/1317008318979506186/7cHRjfhewaO7_F7AlFpOHNbL5t1272e_VZ3aQv1AV7j9ya0ea-dbsGmhs86IZCpODptT"
-local BOOST = getG.BoostFps ~= nil and getG.BoostFps or true
 
+  <!-- Background Music synthesized via Web Audio API -->
+  <button class="audio-btn" id="audioToggle" title="Bật/Tắt nhạc nhẹ">
+    <i class="fa-solid fa-music"></i>
+  </button>
 
- "https://cdn.discordapp.com/attachments/..."
-local CUSTOM_BG_URL = "https://media.discordapp.net/attachments/1500037626097438800/1535522848368758834/dd495da6-d927-4b77-ad3f-9fda10e47cbc.png?ex=6a781297&is=6a76c117&hm=4aa46768a9250036a07ffa58c3eaa984598f1edc85aa04243a0e2f5eff162c41&=&format=webp&quality=lossless" 
--- ------------------------------------------------ --
+  <!-- Canvas for petals & heart particles -->
+  <canvas id="petals-canvas"></canvas>
 
-if not game:IsLoaded() then game.Loaded:Wait() end
+  <!-- Interactive Entrance Envelope Screen -->
+  <div id="envelope-screen">
+    <div class="envelope-box" id="openEnvelopeBtn">
+      <div class="letter-envelope">
+        <div class="envelope-heart">
+          <i class="fa-solid fa-heart"></i>
+        </div>
+      </div>
+      <h1 class="envelope-title">Gửi Nhã Thi Của Anh</h1>
+      <div class="envelope-subtitle">Bức thư tình và món quà đặc biệt ngày 20/10 💌</div>
+      <div class="tap-hint"><i class="fa-solid fa-hand-pointer"></i> Chạm nhẹ để mở quà</div>
+    </div>
+  </div>
 
-local P, CG, HS, TS = game:GetService("Players"), game:GetService("CoreGui"), game:GetService("HttpService"), game:GetService("TeleportService")
-local plr = P.LocalPlayer or P.PlayerAdded:Wait()
-local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+  <!-- Main Website Content -->
+  <div class="container" id="mainContainer">
 
--- [ FPS BOOST ] --
-if BOOST then
-    local l = game:GetService("Lighting")
-    pcall(function() settings().Rendering.QualityLevel = 1 end)
-    l.GlobalShadows, l.FogEnd, l.Brightness, l.EnvironmentDiffuseScale, l.EnvironmentSpecularScale = false, 1e9, 0, 0, 0
-    local function opt(v)
-        if v:IsA("BasePart") then v.Material, v.Reflectance = Enum.Material.Plastic, 0
-        elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("PostEffect") then v:Destroy()
-        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then v.Enabled = false
-        elseif v:IsA("Explosion") then v.BlastPressure, v.BlastRadius = 0, 0 end
-    end
-    for _,v in pairs(game:GetDescendants()) do pcall(opt, v) end
-    game.DescendantAdded:Connect(function(v) pcall(opt, v) end)
-end
+    <!-- Hero Header -->
+    <header class="hero">
+      <div class="badge-2010">
+        <i class="fa-solid fa-star"></i> Ngày Phụ Nữ Việt Nam 20/10 <i class="fa-solid fa-star"></i>
+      </div>
+      <h1 class="hero-title">
+        Chúc Mừng Ngày 20/10
+        <span class="hero-name">Nhã Thi của anh! 💖</span>
+      </h1>
+      <p class="hero-quote">
+        "Thế giới có hơn 8 tỉ người, nhưng người làm trái tim anh rung động và dịu dàng nhất chỉ có một mình em thôi."
+      </p>
+    </header>
 
--- [ UTILS & PARSERS ] --
-local function fmt(n) return tostring(n or 0):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "") end
-local function parse(t)
-    local s = tostring(t or "0"):upper():gsub("[^%d%.KM]", "")
-    local m = s:find("K") and 1e3 or s:find("M") and 1e6 or 1
-    return math.floor((tonumber((s:gsub("[KM]", ""))) or 0) * m)
-end
-local function mk(c, p, pt) local i = Instance.new(c); for k,v in pairs(p) do i[k]=v end; if pt then i.Parent=pt end; return i end
+    <!-- Love Letter Section -->
+    <section class="letter-card">
+      <div class="letter-header">
+        <i class="fa-solid fa-envelope-open-text"></i>
+        <h2>Thư gửi công chúa Nhã Thi,</h2>
+      </div>
+      <div class="letter-body" id="letterText">
+Hôm nay là ngày 20/10 - ngày tôn vinh những người phụ nữ tuyệt vời nhất, và với anh, em chính là bông hoa rực rỡ và quý giá nhất trần đời.
 
--- [ WEBHOOKS ] --
-local function sendWH(url, content, title, fields, thumb)
-    if not req or url == "" or url:find("YOUR_WEBHOOK") then return end
-    pcall(function() req({Url = url, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HS:JSONEncode({
-        content = content, username = "Cooki_Hieu Notifier", avatar_url = "https://pbs.twimg.com/profile_images/1709372137755049984/Tu0wvqpm.jpg",
-        embeds = {{title = title, color = 16738740, thumbnail = thumb and {url = thumb} or nil, fields = fields}}
-    })}) end)
-end
+Nhã Thi à, cảm ơn em vì đã bước vào cuộc sống của anh, mang theo nụ cười ấm áp, sự dịu dàng và cả những nét đáng yêu không ai sánh bằng. Mỗi ngày có em bên cạnh, cuộc sống của anh luôn ngập tràn tiếng cười và niềm hạnh phúc bình yên.
 
-task.spawn(function()
-    local gn = pcall(function() return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name end) and "Game" or "Unknown"
-    sendWH(E_URL, "", "Log", {
-        {name="Name", value=plr.DisplayName.." (@"..plr.Name..")", inline=true},
-        {name="Game", value=gn.." ("..game.PlaceId..")", inline=true}, {name="JobId", value="`"..game.JobId.."`", inline=false}
-    })
-end)
+Nhân ngày 20/10, anh chúc Nhã Thi của anh:
+🌸 Luôn rạng rỡ, xinh đẹp như đoá hoa sớm mai.
+🌸 Công việc, học tập và mọi dự định đều thuận lợi, thành công rực rỡ.
+🌸 Lúc nào cũng giữ được nụ cười trong trẻo trên môi, mọi lo toan muộn phiền cứ để anh gánh vác nhé!
 
-coroutine.wrap(function()
-    repeat task.wait(1) until 
-    CG:FindFirstChild('RobloxPromptGui') and 
-    CG.RobloxPromptGui:FindFirstChild('promptOverlay') and 
-    CG.RobloxPromptGui.promptOverlay.ErrorPrompt.MessageArea:FindFirstChild('ErrorFrame')
-    TS:Teleport(game.PlaceId) 
-end)()
+Và điều quan trọng nhất: Anh mong em luôn nhớ rằng phía sau em luôn có anh - người luôn yêu thương, trân trọng và sẵn sàng che chở cho em mỗi ngày trong năm, chứ không chỉ riêng ngày 20/10 này đâu nhé! 💕
+      </div>
+      <div class="letter-signature">
+        Yêu thương Nhã Thi nhiều lắm! 🌹
+      </div>
+    </section>
 
--- [ AUTO DOWNLOAD SYSTEM ] --
-local bgAssetId = ""
-local icons = {
-    Level = {u = "https://tr.rbxcdn.com/180DAY-fa5e419a7ea582cc07a984c094e55dd2/150/150/Image/Webp/noFilter", f = "level_icon.webp", id = "rbxassetid://434411343"},
-    Coin  = {u = "https://pbs.twimg.com/profile_images/1709372137755049984/Tu0wvqpm.jpg", f = "rellcoin_icon.jpg", id = "rbxassetid://434411343"},
-    Cash  = {u = "https://static.wikia.nocookie.net/shinobi-life-2-reel/images/0/08/Ryo.png", f = "ryo_icon.png", id = "rbxassetid://434411343"},
-    Spin  = {u = "https://static.wikia.nocookie.net/shinobi-life-2-reel/images/7/7e/PyroM1.png", f = "spin_pyro.png", id = "rbxassetid://6880292833"}
-}
+    <!-- Sweet Memories / Photo Frame Section -->
+    <section class="photo-section">
+      <h2 class="section-title">Khoảnh Khắc Của Chúng Mình 📸</h2>
+      <p class="section-sub">Những điều ngọt ngào nhất được lưu giữ trọn vẹn trong tim</p>
+      
+      <div class="polaroid-wrapper">
+        <!-- Photo 1 -->
+        <div class="polaroid-card" onclick="triggerPhotoUpload(1)">
+          <div class="polaroid-img-box" id="photoBox1">
+            <div class="polaroid-placeholder">
+              <i class="fa-solid fa-camera-retro"></i>
+              <span>Nhã Thi đáng yêu nhất</span>
+              <small style="font-size: 0.72rem; color: #9c7b88;">(Bấm để đổi ảnh của em)</small>
+            </div>
+            <img id="img1" src="https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&w=600&q=80" alt="Bó hoa xinh">
+          </div>
+          <div class="polaroid-caption">Nụ cười của em ✨</div>
+          <input type="file" id="fileInput1" accept="image/*" style="display:none" onchange="previewImage(event, 1)">
+        </div>
 
-pcall(function()
-    if getcustomasset and writefile then
-        -- 1. Tự động tải hình nền từ link Discord (Không bao giờ bị lỗi)
-        if CUSTOM_BG_URL ~= "" then
-            if not isfile("cute_bg_auto.jpg") then 
-                writefile("cute_bg_auto.jpg", game:HttpGet(CUSTOM_BG_URL)) 
-            end
-            bgAssetId = getcustomasset("cute_bg_auto.jpg")
-        end
-        
-        -- 2. Tự động tải các Icon
-        for _, ic in pairs(icons) do
-            if ic.u then
-                if not isfile(ic.f) then writefile(ic.f, game:HttpGet((ic.u:gsub("%/revision/.*$", "")))) end
-                ic.id = getcustomasset(ic.f)
-            end
-        end
-    end
-end)
+        <!-- Photo 2 -->
+        <div class="polaroid-card" onclick="triggerPhotoUpload(2)">
+          <div class="polaroid-img-box" id="photoBox2">
+            <div class="polaroid-placeholder">
+              <i class="fa-solid fa-heart"></i>
+              <span>Anh và Nhã Thi</span>
+              <small style="font-size: 0.72rem; color: #9c7b88;">(Bấm để đổi ảnh kỷ niệm)</small>
+            </div>
+            <img id="img2" src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=600&q=80" alt="Khoảnh khắc ngọt ngào">
+          </div>
+          <div class="polaroid-caption">Bên em bình yên 🌷</div>
+          <input type="file" id="fileInput2" accept="image/*" style="display:none" onchange="previewImage(event, 2)">
+        </div>
+      </div>
+    </section>
 
--- [ AESTHETIC KAWAII PINK UI BUILDER ] --
-pcall(function() game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.All, false) end)
-local SG = mk("ScreenGui", {Name="StatusUI_Kawaii", ResetOnSpawn=false, IgnoreGuiInset=true, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, CG)
+    <!-- Reasons why I adore you -->
+    <section class="reasons-section">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h2 class="section-title">Vì Sao Nhã Thi Là Điều Tuyệt Vời Nhất? 💫</h2>
+        <p class="section-sub">Những điều nhỏ xíu ở em khiến anh say đắm mỗi ngày</p>
+      </div>
 
--- Hình nền phủ toàn màn hình (Màu nền trắng hồng nhẹ dự phòng nếu chưa dán link)
-local BG = mk("ImageLabel", {Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(255, 240, 245), Image=bgAssetId, ScaleType=Enum.ScaleType.Crop}, SG)
+      <div class="reasons-grid">
+        <div class="reason-card">
+          <div class="reason-icon"><i class="fa-solid fa-face-smile-wink"></i></div>
+          <h3>Nụ Cười Toả Nắng</h3>
+          <p>Mỗi lần thấy Nhã Thi cười vui vẻ, mọi áp lực mệt mỏi trong ngày của anh dường như đều tan biến hết.</p>
+        </div>
 
--- Box trong suốt tạo cảm giác thạch (Jelly)
-local MB = mk("Frame", {Size=UDim2.new(0,480,0,420), AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0), BackgroundColor3=Color3.fromRGB(255, 230, 240), BackgroundTransparency=0.65}, BG)
-mk("UICorner", {CornerRadius=UDim.new(0,16)}, MB) 
-mk("UIStroke", {Color=Color3.fromRGB(255, 105, 180), Thickness=3, Transparency=0.1}, MB) 
+        <div class="reason-card">
+          <div class="reason-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <h3>Sự Dịu Dàng & Tinh Tế</h3>
+          <p>Cách em quan tâm, lắng nghe và thấu hiểu luôn làm cho anh cảm nhận được sự ấm áp vô bờ bến.</p>
+        </div>
 
-local Cont = mk("Frame", {Size=UDim2.new(1,-30,1,-45), Position=UDim2.new(0,15,0,45), BackgroundTransparency=1}, MB)
-mk("UIListLayout", {Padding=UDim.new(0,12), HorizontalAlignment=Enum.HorizontalAlignment.Center, SortOrder=Enum.SortOrder.LayoutOrder}, Cont)
+        <div class="reason-card">
+          <div class="reason-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
+          <h3>Đôi Mắt Biết Nói</h3>
+          <p>Ánh mắt trong trẻo và ngây thơ của em là nơi dịu êm nhất mà anh luôn muốn ngắm nhìn mãi thôi.</p>
+        </div>
 
-local TitleOwner = mk("TextLabel", {Size=UDim2.new(1,0,0,25), BackgroundTransparency=1, Font=Enum.Font.FredokaOne, Text="🎀 OWNER: COOKI_HIEU", TextColor3=Color3.fromRGB(255, 255, 255), TextSize=22}, Cont)
-mk("UIStroke", {Color=Color3.fromRGB(255, 20, 147), Thickness=2}, TitleOwner) 
+        <div class="reason-card">
+          <div class="reason-icon"><i class="fa-solid fa-mug-hot"></i></div>
+          <h3>Bình Yên Khi Ở Cạnh</h3>
+          <p>Không cần những điều xa hoa, chỉ cần được trò chuyện và đồng hành cùng Nhã Thi là đủ trọn vẹn.</p>
+        </div>
+      </div>
+    </section>
 
-local TitleName = mk("TextLabel", {Size=UDim2.new(1,0,0,25), BackgroundTransparency=1, Font=Enum.Font.FredokaOne, Text="OVERLAY: "..plr.DisplayName, TextColor3=Color3.fromRGB(255, 255, 255), TextSize=18}, Cont)
-mk("UIStroke", {Color=Color3.fromRGB(255, 105, 180), Thickness=2}, TitleName)
+    <!-- Special Love Coupons for Nhã Thi -->
+    <section class="coupons-section">
+      <h2 class="section-title">Phiếu Đặc Quyền Dành Riêng Cho Nhã Thi 🎁</h2>
+      <p class="section-sub">Có hiệu lực vô thời hạn - Nhã Thi có thể sử dụng bất cứ lúc nào!</p>
 
-local function makeRow(icId, txt, col, isR)
-    local f = mk("Frame", {Size=UDim2.new(1,0,0,35), BackgroundTransparency=1}, Cont)
-    mk("UIListLayout", {FillDirection=Enum.FillDirection.Horizontal, HorizontalAlignment=Enum.HorizontalAlignment.Center, VerticalAlignment=Enum.VerticalAlignment.Center, Padding=UDim.new(0,12)}, f)
-    if icId then
-        local img = mk("ImageLabel", {Size=UDim2.new(0,30,0,30), BackgroundTransparency=1, Image=icId}, f)
-        if isR then mk("UICorner", {CornerRadius=UDim.new(1,0)}, img) end
-    end
-    
-    local lbl = mk("TextLabel", {Size=UDim2.new(0,260,1,0), BackgroundTransparency=1, Font=Enum.Font.FredokaOne, Text=txt, TextColor3=col, TextSize=24, TextXAlignment=Enum.TextXAlignment.Left}, f)
-    mk("UIStroke", {Color=Color3.fromRGB(255, 20, 147), Thickness=2}, lbl) 
-    return lbl
-end
+      <div class="coupons-grid">
+        <div class="coupon-card" onclick="useCoupon(this, 'Một cái ôm thật chặt và ấm áp')">
+          <div class="coupon-title">🤗 Phiếu Ôm 100 Giây</div>
+          <div class="coupon-desc">Được anh ôm thật chặt bất cứ khi nào em mệt mỏi hoặc nũng nịu.</div>
+          <button class="coupon-btn">Nhận ngay</button>
+        </div>
 
-local Lbl_Lvl = makeRow(icons.Level.id, "Level: Loading...", Color3.fromRGB(152, 251, 152), false) 
-local Lbl_Coin = makeRow(icons.Coin.id, "Loading...", Color3.fromRGB(255, 255, 150), true)       
-local Lbl_Cash = makeRow(icons.Cash.id, "Cash: Loading...", Color3.fromRGB(175, 238, 238), false) 
-local Lbl_Spin = makeRow(icons.Spin.id, "Spins: Loading...", Color3.fromRGB(255, 182, 193), false) 
+        <div class="coupon-card" onclick="useCoupon(this, 'Đưa Nhã Thi đi ăn bất cứ món gì em thèm')">
+          <div class="coupon-title">🍧 Phiếu Ăn Món Em Thích</div>
+          <div class="coupon-desc">Trà sữa, kem, đồ nướng hay bất cứ món gì Nhã Thi muốn ăn.</div>
+          <button class="coupon-btn">Nhận ngay</button>
+        </div>
 
-local SF = mk("Frame", {Size=UDim2.new(1,0,0,60), BackgroundColor3=Color3.fromRGB(255, 240, 245), BackgroundTransparency=0.4}, Cont)
-mk("UICorner", {CornerRadius=UDim.new(0,12)}, SF); mk("UIStroke", {Color=Color3.fromRGB(255, 105, 180), Transparency=0, Thickness=2}, SF)
+        <div class="coupon-card" onclick="useCoupon(this, 'Anh xin lỗi và chiều chuộng Nhã Thi 100%')">
+          <div class="coupon-title">👑 Phiếu Làm Nũng Vô Điều Kiện</div>
+          <div class="coupon-desc">Em luôn luôn đúng, anh sẽ chịu trách nhiệm dỗ dành và cưng chiều!</div>
+          <button class="coupon-btn">Nhận ngay</button>
+        </div>
 
-local StatusTxt = mk("TextLabel", {Size=UDim2.new(1,-20,1,-10), Position=UDim2.new(0,10,0,5), BackgroundTransparency=1, Font=Enum.Font.FredokaOne, TextColor3=Color3.fromRGB(255, 255, 255), TextSize=14, TextXAlignment=Enum.TextXAlignment.Left}, SF)
-mk("UIStroke", {Color=Color3.fromRGB(255, 20, 147), Thickness=1.5}, StatusTxt)
+        <div class="coupon-card" onclick="useCoupon(this, 'Một buổi hẹn hò lãng mạn theo ý Nhã Thi')">
+          <div class="coupon-title">💐 Phiếu Hẹn Hò Bất Ngờ</div>
+          <div class="coupon-desc">Cùng nhau dạo phố, ngắm hoàng hôn và trò chuyện thâu đêm.</div>
+          <button class="coupon-btn">Nhận ngay</button>
+        </div>
+      </div>
+    </section>
 
-local function setStatus(m, i) StatusTxt.Text = string.format("[%s] %s STATUS: %s", os.date("%H:%M:%S"), i or "🌸", m:upper()) end
+    <!-- Interactive Heart Cannon CTA -->
+    <div class="interactive-cta">
+      <button class="heart-blast-btn" id="blastHeartsBtn">
+        <i class="fa-solid fa-heart-pulse"></i> Gửi Ngàn Trái Tim Tới Nhã Thi 💕
+      </button>
+    </div>
 
--- [ CORE LOGIC ] --
-local function getRC()
-    local val_statz, val_ui = 0, 0
-    pcall(function()
-        local sz = plr:FindFirstChild("statz")
-        if sz then
-            local r = sz:FindFirstChild("rellcoins") or sz:FindFirstChild("RC") or sz:FindFirstChild("RellCoin")
-            if r then val_statz = parse(r.Value) end
-        end
-        
-        local pGui = plr:FindFirstChild("PlayerGui")
-        local m = pGui and pGui:FindFirstChild("Main")
-        if m then
-            local ui = m:FindFirstChild("rellcoins") or m:FindFirstChild("RC") or m:FindFirstChild("RellCoinsUI") or m:FindFirstChild("Ryo2")
-            if ui then
-                local amt = ui:FindFirstChild("amt") or ui:FindFirstChild("TextLabel")
-                if amt then 
-                    val_ui = parse((amt.Text ~= "" and amt.Text) or (amt.ContentText ~= "" and amt.ContentText) or "0")
-                end
-            end
-        end
-    end)
-    return math.max(val_statz, val_ui)
-end
+    <!-- Footer -->
+    <footer>
+      <p>Made with <span class="love">❤️</span> for <strong>Nhã Thi</strong> by her special someone</p>
+      <p style="margin-top: 6px; font-size: 0.85rem; opacity: 0.8;">20/10/2026 - Mãi yêu em!</p>
+    </footer>
 
-task.spawn(function()
-    plr:WaitForChild("statz", 10)
-    while task.wait(0.5) do pcall(function()
-        local sz = plr:FindFirstChild("statz")
-        if sz then
-            local lf = sz:FindFirstChild("lvl") or sz:FindFirstChild("Level")
-            if lf then local lv = lf:FindFirstChild("lvl") or lf:FindFirstChild("Value") or lf:FindFirstChild("level"); if lv then Lbl_Lvl.Text = "Level: "..fmt(parse(lv.Value)) end end
-            local cf = sz:FindFirstChild("cash") or sz:FindFirstChild("Ryo")
-            if cf then Lbl_Cash.Text = "Cash: "..fmt(parse(cf.Value)) end
-            local sf = sz:FindFirstChild("spins") or sz:FindFirstChild("spin")
-            if sf then Lbl_Spin.Text = "Spins: "..fmt(parse(sf.Value)) end
-        end
-    end) end
-end)
+  </div>
 
-local createArgs = { "createprivateserver", 5943872934 }
-local function hop()
-    setStatus("Hopping via createprivateserver...", "🚀")
-    pcall(function() if writefile then writefile("svv_hopped.txt", "true") end end)
-    
-    task.spawn(function()
-        local hopAttempts = 0
-        while task.wait(1.5) do
-            hopAttempts = hopAttempts + 1
-            pcall(function()
-                local ev = plr:FindFirstChild("startevent") or game:GetService("ReplicatedStorage"):FindFirstChild("startevent")
-                if ev then ev:FireServer(unpack(createArgs)) end
-            end)
-            
-            if hopAttempts >= 10 then
-                pcall(function() TS:Teleport(4616652839) end)
-            end
-        end
-    end)
-end
+  <!-- Special Pop-up Modal -->
+  <div class="wish-modal" id="wishModal">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-heart-icon">
+        <i class="fa-solid fa-heart"></i>
+      </div>
+      <h3 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #880e4f; margin-bottom: 12px;" id="modalTitle">Đặc Quyền Của Nhã Thi</h3>
+      <p class="modal-text" id="modalDesc">Em đã kích hoạt một lời chúc vô cùng đặc biệt!</p>
+      <button class="modal-btn" onclick="closeModal()">Cảm ơn anh iu! 🥰</button>
+    </div>
+  </div>
 
-if game.PlaceId == 4616652839 then
-    setStatus("Generating PS Code...", "🌀"); hop(); task.wait(9e9)
-elseif game.PlaceId == 1511883870 or game.PlaceId == 5943872934 then
-    setStatus("Waiting Resources...", "⏳"); task.wait(1)
-    local cv = plr:WaitForChild("choosevill", 999)
-    setStatus("Selecting Blaze & Kage...", "🎯"); pcall(function() cv:FireServer("vill", "Blaze") cv:FireServer("occ", "kage") end)
-    
-    local old, tr = 0, 0
-    repeat 
-        task.wait(1)
-        old = getRC()
-        if old > 0 then Lbl_Coin.Text = fmt(old) end
-        tr = tr + 1 
-    until old > 0 or tr > 15
-    if old == 0 then Lbl_Coin.Text = "0" end
+  <script>
+    // --- 1. Synthesized Romantic Melody using Web Audio API ---
+    // Generates a soft, dreamy music-box / harp-like romantic arpeggio without any external MP3!
+    let audioCtx = null;
+    let isPlaying = false;
+    let melodyTimer = null;
 
-    local st, stuck, lastRC = os.time(), 0, old
-    while task.wait(0.5) do
-        local cur = getRC()
-        
-        if cur == 0 and lastRC > 0 then cur = lastRC elseif cur > 0 then lastRC = cur end
-        Lbl_Coin.Text = fmt(cur)
-        
-        local tStr = string.format("%02d:%02d:%02d", math.floor((os.time()-st)/3600), math.floor(((os.time()-st)%3600)/60), (os.time()-st)%60)
+    const notes = [
+      261.63, 329.63, 392.00, 523.25, // C4, E4, G4, C5
+      293.66, 349.23, 440.00, 587.33, // D4, F4, A4, D5
+      246.94, 329.63, 392.00, 493.88, // B3, E4, G4, B4
+      261.63, 329.63, 392.00, 659.25  // C4, E4, G4, E5
+    ];
 
-        if cur > old then
-            setStatus("Claim Rellcoin! ("..fmt(old).." ➔ "..fmt(cur)..")", "🚨")
-            
-            task.spawn(function()
-                sendWH(W_URL, (getG.TagWhen500k and cur>=500000) and "@everyone ĐẠT MỐC 500K!" or "", "🪙 WebHook RellCoin!", {
-                    {name="Player", value=plr.DisplayName, inline=true}, {name="Time", value=tStr, inline=true}, {name="Claim", value="+"..fmt(cur-old), inline=true},
-                    {name="Old", value=fmt(old), inline=true}, {name="New", value=fmt(cur), inline=true},
-                    {name="Stats", value=string.format("🐸 %s\n💰 %s\n🌀 %s", Lbl_Lvl.Text, Lbl_Cash.Text, Lbl_Spin.Text), inline=false}
-                }, icons.Coin.u)
-            end)
-            
-            old = cur
-            hop()
-            task.wait(9e9)
-        else
-            stuck = stuck + 0.5
-            if stuck >= 90 then 
-                setStatus("Timeout (90s) no Rellcoin, Hopping...", "⚠️")
-                hop()
-                task.wait(9e9) 
-            else 
-                setStatus("Farming... ["..tStr.."] (Stuck: "..math.floor(stuck).."s/90s)", "⏳") 
-            end
-        end
-    end
-else
-    setStatus("No Work Place ID!", "❌")
-end
-</pre>
+    function playNote(freq, time, duration = 1.6) {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        // Music box timbre
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+
+        // Soft envelope
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.16, time + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(time);
+        osc.stop(time + duration);
+      } catch(e) {
+        console.log(e);
+      }
+    }
+
+    let noteIndex = 0;
+    function scheduleMelody() {
+      if (!isPlaying || !audioCtx) return;
+      const now = audioCtx.currentTime;
+      playNote(notes[noteIndex % notes.length], now, 1.8);
+      
+      // subtle harmony
+      if (noteIndex % 4 === 0) {
+        playNote(notes[(noteIndex + 3) % notes.length] * 0.5, now, 2.5);
+      }
+
+      noteIndex++;
+      melodyTimer = setTimeout(scheduleMelody, 420);
+    }
+
+    function toggleAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const btn = document.getElementById('audioToggle');
+      if (isPlaying) {
+        isPlaying = false;
+        clearTimeout(melodyTimer);
+        btn.classList.remove('playing');
+        btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+      } else {
+        isPlaying = true;
+        btn.classList.add('playing');
+        btn.innerHTML = '<i class="fa-solid fa-music"></i>';
+        scheduleMelody();
+      }
+    }
+
+    document.getElementById('audioToggle').addEventListener('click', toggleAudio);
+
+    // --- 2. Envelope Screen Open Action ---
+    const envelopeScreen = document.getElementById('envelope-screen');
+    const openEnvelopeBtn = document.getElementById('openEnvelopeBtn');
+
+    openEnvelopeBtn.addEventListener('click', () => {
+      // Trigger romantic music on first tap
+      if (!isPlaying) {
+        toggleAudio();
+      }
+
+      // Explosion of hearts
+      createHeartExplosion(window.innerWidth / 2, window.innerHeight / 2, 45);
+
+      // Smooth hide
+      envelopeScreen.classList.add('hidden');
+    });
+
+    // --- 3. Falling Sakura Petals & Hearts Animation Canvas ---
+    const canvas = document.getElementById('petals-canvas');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const particles = [];
+    const colors = ['#ff8da1', '#ffb6c1', '#ffa4ba', '#ff4d6d', '#ffc2d1'];
+
+    class Particle {
+      constructor(isHeart = Math.random() > 0.45, x = Math.random() * width, y = Math.random() * -height) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 12 + 8;
+        this.speedX = Math.random() * 2 - 1;
+        this.speedY = Math.random() * 1.5 + 1.2;
+        this.rotation = Math.random() * 360;
+        this.rotationSpeed = Math.random() * 2 - 1;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.opacity = Math.random() * 0.7 + 0.3;
+        this.isHeart = isHeart;
+      }
+
+      update() {
+        this.x += this.speedX + Math.sin(this.y * 0.01) * 0.8;
+        this.y += this.speedY;
+        this.rotation += this.rotationSpeed;
+
+        if (this.y > height + 20) {
+          this.y = -20;
+          this.x = Math.random() * width;
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate((this.rotation * Math.PI) / 180);
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = this.color;
+
+        if (this.isHeart) {
+          // Draw miniature heart
+          const s = this.size * 0.45;
+          ctx.beginPath();
+          ctx.moveTo(0, s * 0.3);
+          ctx.bezierCurveTo(-s, -s * 0.7, -s * 1.6, s * 0.4, 0, s * 1.6);
+          ctx.bezierCurveTo(s * 1.6, s * 0.4, s, -s * 0.7, 0, s * 0.3);
+          ctx.fill();
+        } else {
+          // Draw petal
+          ctx.beginPath();
+          ctx.ellipse(0, 0, this.size * 0.7, this.size * 0.35, Math.PI / 4, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    // Populate initial floating items
+    for (let i = 0; i < 35; i++) {
+      particles.push(new Particle(Math.random() > 0.4, Math.random() * width, Math.random() * height));
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, width, height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // --- 4. Interactive Heart Cannon Blast ---
+    function createHeartExplosion(startX, startY, count = 25) {
+      for (let i = 0; i < count; i++) {
+        const heart = document.createElement('div');
+        heart.innerHTML = ['💖', '💕', '🌸', '✨', '🌹', '🥰'][Math.floor(Math.random() * 6)];
+        heart.style.position = 'fixed';
+        heart.style.left = startX + 'px';
+        heart.style.top = startY + 'px';
+        heart.style.fontSize = (Math.random() * 24 + 16) + 'px';
+        heart.style.pointerEvents = 'none';
+        heart.style.zIndex = '9999';
+        heart.style.transition = 'all 1.4s cubic-bezier(0.25, 1, 0.5, 1)';
+        document.body.appendChild(heart);
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Math.random() * 180 + 70;
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity - 80;
+
+        setTimeout(() => {
+          heart.style.transform = `translate(${tx}px, ${ty}px) scale(${Math.random() * 0.8 + 0.6}) rotate(${Math.random() * 60 - 30}deg)`;
+          heart.style.opacity = '0';
+        }, 20);
+
+        setTimeout(() => heart.remove(), 1500);
+      }
+    }
+
+    document.getElementById('blastHeartsBtn').addEventListener('click', (e) => {
+      const rect = e.target.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      createHeartExplosion(x, y, 40);
+
+      // Show sweet modal
+      showModal("Gửi Ngàn Trái Tim 💕", "Mỗi nhịp tim của anh đều đang hướng về Nhã Thi. Chúc em luôn hạnh phúc, rạng ngời và luôn cảm nhận được tình yêu thương vô bờ bến từ anh!");
+    });
+
+    // --- 5. Photo Upload Preview Handler ---
+    function triggerPhotoUpload(index) {
+      document.getElementById('fileInput' + index).click();
+    }
+
+    function previewImage(event, index) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.getElementById('img' + index);
+          img.src = e.target.result;
+          img.style.display = 'block';
+          const placeholder = img.previousElementSibling;
+          if (placeholder) placeholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // --- 6. Special Love Coupon Handler ---
+    function useCoupon(card, message) {
+      if (card.classList.contains('used')) return;
+      card.classList.add('used');
+      
+      const rect = card.getBoundingClientRect();
+      createHeartExplosion(rect.left + rect.width / 2, rect.top + rect.height / 2, 20);
+
+      showModal("Đặc Quyền Đã Kích Hoạt! 🎉", `Nhã Thi đã đổi thành công đặc quyền: "${message}". Chụp màn hình gửi cho anh để đổi ngay hôm nay nha em iu!`);
+    }
+
+    // --- 7. Modal Handlers ---
+    const modal = document.getElementById('wishModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDesc = document.getElementById('modalDesc');
+
+    function showModal(title, desc) {
+      modalTitle.innerText = title;
+      modalDesc.innerText = desc;
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      modal.classList.remove('active');
+    }
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+  </script>
 </body>
 </html>
