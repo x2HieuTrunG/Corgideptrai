@@ -1,4 +1,4 @@
--- [[ SEA HUB UI LIBRARY WITH FULL CUSTOM THEME SETTINGS ]] --
+
 
 local function GetUi()
     
