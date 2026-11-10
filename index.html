@@ -1,1 +1,754 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAO HIẾU TRUNG — The game you know, rebuilt in Rust</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono & Press Start 2P -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        horizon: {
+                            purple: '#6b5cff',
+                            purpleLight: '#9d94ff',
+                            card: 'rgba(26, 20, 43, 0.72)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-color: #0b0c1b;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Crisp Pixel Art Rendering for Canvas */
+        #pixelCanvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* Custom Range Slider for Standard Launcher FPS */
+        .fps-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 3px;
+            outline: none;
+            cursor: ew-resize;
+            position: relative;
+        }
+
+        .fps-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 6px;
+            height: 18px;
+            border-radius: 2px;
+            background: #e2e0eb;
+            cursor: ew-resize;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+
+        .fps-slider::-webkit-slider-thumb:hover,
+        .fps-slider::-webkit-slider-thumb:active {
+            transform: scaleY(1.25) scaleX(1.2);
+            background: #ffffff;
+            box-shadow: 0 0 14px rgba(255, 255, 255, 1);
+        }
+
+        .fps-slider::-moz-range-thumb {
+            width: 6px;
+            height: 18px;
+            border: none;
+            border-radius: 2px;
+            background: #e2e0eb;
+            cursor: ew-resize;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+
+        /* Glowing Name Shimmer Effect */
+        @keyframes textShine {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .name-gradient {
+            background: linear-gradient(90deg, #ffffff, #c4b5fd, #f472b6, #fbbf24, #ffffff);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: textShine 6s ease infinite;
+        }
+
+        /* Subtle float animation */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .animate-float {
+            animation: floatSlow 4s ease-in-out infinite;
+        }
+
+        /* Benchmark Glass Card */
+        .benchmark-card {
+            background: rgba(25, 19, 44, 0.68);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65), 
+                        0 0 40px 0 rgba(107, 92, 255, 0.08);
+        }
+
+        /* Primary CTA Button Glow */
+        .btn-primary-horizon {
+            background: #6355ff;
+            box-shadow: 0 4px 20px -2px rgba(99, 85, 255, 0.55), inset 0 1px 0 rgba(255,255,255,0.2);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-primary-horizon:hover {
+            background: #7165ff;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 28px -2px rgba(99, 85, 255, 0.75), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+
+        .btn-primary-horizon:active {
+            transform: translateY(0px);
+        }
+
+        .btn-secondary-horizon {
+            background: rgba(45, 38, 70, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary-horizon:hover {
+            background: rgba(62, 53, 94, 0.8);
+            border-color: rgba(255, 255, 255, 0.18);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="relative min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- ================= ANIMATED PIXEL-ART SUNSET CANVAS BACKGROUND ================= -->
+    <canvas id="pixelCanvas" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+
+    <!-- ================= TOP NAVIGATION BAR ================= -->
+    <header class="relative z-20 w-full max-w-[1200px] mx-auto px-6 pt-5 pb-3 flex items-center justify-between">
+        <!-- Left Logo + Nav Links -->
+        <div class="flex items-center space-x-8">
+            <!-- Brand / Logo with CAO HIẾU TRUNG -->
+            <a href="#" class="flex items-center space-x-2.5 group focus:outline-none">
+                <!-- Pixelated H / Bridge Logo Icon matching screenshot -->
+                <div class="w-6 h-6 flex items-center justify-center relative">
+                    <svg class="w-5 h-5 text-white group-hover:text-indigo-300 transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                        <!-- Pixelated H-like emblem -->
+                        <rect x="3" y="4" width="3" height="16" />
+                        <rect x="18" y="4" width="3" height="16" />
+                        <rect x="6" y="10" width="12" height="4" fill="#8b7eff" />
+                        <rect x="9" y="7" width="6" height="10" fillOpacity="0.35" />
+                    </svg>
+                </div>
+                <span id="navBrandText" class="font-bold text-[15px] tracking-wide text-white group-hover:text-indigo-200 transition-colors">
+                    CAO HIẾU TRUNG
+                </span>
+            </a>
+
+            <!-- Navigation Menu Links -->
+            <nav class="hidden lg:flex items-center space-x-6 text-[13.5px] font-medium text-gray-300/85">
+                <a href="#about" class="hover:text-white transition-colors">About</a>
+                <a href="#hub" class="hover:text-white transition-colors">Hub</a>
+                <a href="#benchmarks" class="hover:text-white transition-colors">Benchmarks</a>
+                <a href="#mods" class="hover:text-white transition-colors">Mods</a>
+                <a href="#releases" class="flex items-center space-x-1.5 hover:text-white transition-colors">
+                    <span>Releases</span>
+                    <span class="px-1.5 py-0.5 text-[10px] font-bold bg-[#6355ff] text-white rounded-full leading-none shadow-sm shadow-indigo-500/50">96</span>
+                </a>
+                <a href="#docs" class="hover:text-white transition-colors">Docs</a>
+                <a href="#players" class="hover:text-white transition-colors">Players</a>
+                <a href="#shop" class="hover:text-white transition-colors">Shop</a>
+            </nav>
+        </div>
+
+        <!-- Right Status Badge -->
+        <div class="flex items-center space-x-3">
+            <span class="px-3 py-1 rounded-full text-[12px] font-semibold text-indigo-200 bg-white/[0.06] border border-white/10 backdrop-blur-md">
+                CAO HIẾU TRUNG
+            </span>
+        </div>
+    </header>
+
+    <!-- ================= TOP FLOATING NAME BANNER (CAO HIẾU TRUNG) ================= -->
+    <div class="relative z-20 w-full max-w-[1200px] mx-auto px-6 mt-2 flex items-center justify-center sm:justify-start">
+        <div class="inline-flex items-center space-x-2.5 px-3.5 py-1 rounded-full bg-indigo-950/60 border border-indigo-400/30 backdrop-blur-md shadow-lg shadow-indigo-500/10 animate-float">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 -ml-2.5"></span>
+            <span class="text-xs font-bold tracking-widest uppercase name-gradient" id="topBannerName">
+                ★ CAO HIẾU TRUNG ★
+            </span>
+            <span class="text-[11px] text-indigo-300/80 font-mono hidden sm:inline">| Official Edition</span>
+        </div>
+    </div>
+
+    <!-- ================= MAIN HERO SECTION ================= -->
+    <main class="relative z-20 flex-1 flex items-center w-full max-w-[1060px] mx-auto px-6 pt-4 pb-36 md:pb-44">
+        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+            
+            <!-- LEFT COLUMN: Hero Text (7 cols) -->
+            <div class="lg:col-span-7 space-y-5 text-left">
+                
+                <!-- Metadata Tag: Written in Rust -->
+                <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-300/90 font-medium">
+                    <!-- Rust Gear Icon + Written in Rust -->
+                    <div class="flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        <span>Written in <strong class="text-white font-semibold">Rust</strong></span>
+                    </div>
+                </div>
+
+                <!-- Main Headline with CAO HIẾU TRUNG highlight -->
+                <div class="space-y-2">
+                    <div id="heroCustomName" class="text-2xl sm:text-3xl font-extrabold tracking-tight name-gradient uppercase drop-shadow-[0_2px_10px_rgba(157,148,255,0.4)]">
+                        CAO HIEU TRUNG
+                    </div>
+                    <h1 class="text-4xl sm:text-[52px] font-extrabold tracking-tight leading-[1.08] text-white">
+                        The experience you know,<br />
+                        <span class="text-[#9d94ff]">rebuilt in Rust.</span>
+                    </h1>
+                </div>
+
+                <!-- Subtitle Description -->
+                <p class="text-[15.5px] sm:text-[16px] text-gray-300/80 leading-relaxed max-w-[520px] font-normal">
+                    High-performance architecture and core engine logic, completely rewritten in Rust for maximum stability, ultra-low latency, and next-generation speed.
+                </p>
+            </div>
+
+            <!-- RIGHT COLUMN: Interactive Benchmarks Card (5 cols) -->
+            <div class="lg:col-span-5 flex justify-center lg:justify-end">
+                <div class="benchmark-card w-full max-w-[390px] rounded-2xl p-6 sm:p-7 space-y-5">
+                    <!-- Card Header -->
+                    <div class="space-y-1.5">
+                        <div class="text-[12px] font-medium text-gray-400 tracking-wide">
+                            Benchmarks
+                        </div>
+                        <h2 class="text-[22px] font-bold text-white tracking-tight">
+                            <span id="multiplierText" class="text-[#9d94ff]">3×</span> the frame rate.
+                        </h2>
+                        <p class="text-[12.5px] text-gray-400/90 leading-relaxed">
+                            Average frames per second compared against standard engine performance.
+                        </p>
+                    </div>
+
+                    <!-- Horizon / Cao Hiếu Trung FPS Bar -->
+                    <div class="space-y-2 pt-1">
+                        <div class="flex items-baseline justify-between">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-3.5 h-3.5 text-[#9d94ff]" viewBox="0 0 24 24" fill="currentColor">
+                                    <rect x="3" y="4" width="3" height="16" />
+                                    <rect x="18" y="4" width="3" height="16" />
+                                    <rect x="6" y="10" width="12" height="4" />
+                                </svg>
+                                <span class="text-[13px] font-semibold text-white" id="benchmarkBrandLabel">CAO HIẾU TRUNG</span>
+                            </div>
+                            <div class="flex items-baseline space-x-1">
+                                <span id="horizonFpsValue" class="text-[32px] font-extrabold text-white tracking-tight tabular-nums leading-none">151</span>
+                                <span class="text-[12px] text-gray-400 font-medium">fps</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Track -->
+                        <div class="w-full h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
+                            <div id="horizonBar" class="h-full bg-gradient-to-r from-[#6b5cff] to-[#9d94ff] rounded-full transition-all duration-150 ease-out" style="width: 42%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Standard Engine Interactive Slider -->
+                    <div class="space-y-2 pt-1">
+                        <div class="flex items-baseline justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-3.5 h-3.5 rounded-[2px] bg-gray-500/40 border border-gray-400/40 inline-flex items-center justify-center text-[8px] text-gray-300">❖</span>
+                                <span class="text-[13px] font-medium text-gray-300/90">Standard engine</span>
+                            </div>
+                            <div class="flex items-baseline space-x-1">
+                                <span id="standardFpsValue" class="text-[26px] font-bold text-gray-400 tracking-tight tabular-nums leading-none">50</span>
+                                <span class="text-[12px] text-gray-500 font-medium">fps</span>
+                            </div>
+                        </div>
+
+                        <!-- Draggable Range Input -->
+                        <div class="relative flex items-center py-1">
+                            <input 
+                                id="fpsSlider" 
+                                type="range" 
+                                min="15" 
+                                max="240" 
+                                value="50" 
+                                class="fps-slider"
+                                aria-label="Standard frame rate"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Card Footer Note -->
+                    <p class="text-[11.5px] text-gray-400/75 leading-relaxed pt-1">
+                        Drag the standard bar to try your own frame rate. Results vary with hardware.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ================= FLOATING CUSTOMIZATION BAR (BOTTOM RIGHT) ================= -->
+    <div class="fixed bottom-4 right-4 z-30 flex items-center space-x-2 bg-[#161129]/85 backdrop-blur-md border border-white/15 px-3.5 py-2 rounded-xl shadow-2xl text-xs">
+        <span class="text-indigo-300 font-semibold hidden sm:inline">Hiệu ứng:</span>
+        <button id="toggleStarsBtn" onclick="spawnMeteorShower()" class="px-2.5 py-1 rounded-lg bg-indigo-600/40 hover:bg-indigo-600/70 border border-indigo-400/30 text-white font-medium transition-colors">
+            ☄️ Sao băng
+        </button>
+        <button onclick="cycleSunMode()" class="px-2.5 py-1 rounded-lg bg-pink-600/30 hover:bg-pink-600/60 border border-pink-400/30 text-white font-medium transition-colors">
+            🌅 Đổi màu trời
+        </button>
+    </div>
+
+    <!-- ================= INTERACTIVE & PIXEL SUNSET ANIMATION SCRIPT ================= -->
+    <script>
+        /* -------------------------------------------------------------------------- */
+        /* 1. INTERACTIVE BENCHMARK SLIDER                                            */
+        /* -------------------------------------------------------------------------- */
+        const fpsSlider = document.getElementById('fpsSlider');
+        const standardFpsValue = document.getElementById('standardFpsValue');
+        const horizonFpsValue = document.getElementById('horizonFpsValue');
+        const horizonBar = document.getElementById('horizonBar');
+        const multiplierText = document.getElementById('multiplierText');
+
+        function updateBenchmark() {
+            const stdFps = parseInt(fpsSlider.value, 10);
+            // 3.02x FPS boost (50 -> 151)
+            const multiplier = 3.02;
+            const horFps = Math.round(stdFps * multiplier);
+
+            standardFpsValue.textContent = stdFps;
+            horizonFpsValue.textContent = horFps;
+
+            // Calculate bar percentage (max scale around 750 fps)
+            const widthPercent = Math.min(100, Math.max(12, (horFps / 360) * 100));
+            horizonBar.style.width = widthPercent + '%';
+        }
+
+        fpsSlider.addEventListener('input', updateBenchmark);
+
+        /* -------------------------------------------------------------------------- */
+        /* 2. PIXEL-ART ANIMATED SUNSET & BLOCKY SKYLINE CANVAS                       */
+        /* -------------------------------------------------------------------------- */
+        const canvas = document.getElementById('pixelCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Downscale factor to create genuine crisp retro pixel art (1 pixel = 4x4 screen px)
+        const PIXEL_SCALE = 3;
+        let pWidth = 0;
+        let pHeight = 0;
+
+        // Mouse Parallax tracking
+        let targetMouseX = 0;
+        let targetMouseY = 0;
+        let currentMouseX = 0;
+        let currentMouseY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+            targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+        });
+
+        // Sky Color Themes (Default = Horizon Screenshot Sunset)
+        const skyThemes = [
+            // Theme 0: Original Horizon Sunset (Deep Indigo -> Purple -> Magenta -> Warm Orange)
+            [
+                { stop: 0.00, color: [11, 12, 27] },
+                { stop: 0.38, color: [24, 18, 46] },
+                { stop: 0.62, color: [68, 30, 82] },
+                { stop: 0.78, color: [145, 52, 95] },
+                { stop: 0.90, color: [219, 101, 75] },
+                { stop: 1.00, color: [245, 165, 88] }
+            ],
+            // Theme 1: Cyberpunk Violet & Neon Cyan
+            [
+                { stop: 0.00, color: [8, 10, 28] },
+                { stop: 0.40, color: [28, 16, 62] },
+                { stop: 0.68, color: [92, 26, 115] },
+                { stop: 0.85, color: [195, 42, 125] },
+                { stop: 1.00, color: [65, 200, 230] }
+            ],
+            // Theme 2: Golden Dusk Crimson
+            [
+                { stop: 0.00, color: [15, 10, 22] },
+                { stop: 0.42, color: [48, 18, 42] },
+                { stop: 0.70, color: [128, 32, 58] },
+                { stop: 0.86, color: [215, 82, 50] },
+                { stop: 1.00, color: [252, 198, 85] }
+            ]
+        ];
+        let currentThemeIndex = 0;
+
+        function cycleSunMode() {
+            currentThemeIndex = (currentThemeIndex + 1) % skyThemes.length;
+        }
+
+        // Scene Entities
+        let stars = [];
+        let meteors = [];
+        let clouds = [];
+        let skylineLayers = [];
+        let fireflies = [];
+
+        function initScene() {
+            pWidth = Math.ceil(window.innerWidth / PIXEL_SCALE);
+            pHeight = Math.ceil(window.innerHeight / PIXEL_SCALE);
+            canvas.width = pWidth;
+            canvas.height = pHeight;
+
+            // 1. Generate Twinkling Stars
+            stars = [];
+            const starCount = Math.floor((pWidth * pHeight) / 380);
+            for (let i = 0; i < starCount; i++) {
+                stars.push({
+                    x: Math.random() * pWidth,
+                    y: Math.random() * (pHeight * 0.68),
+                    size: Math.random() > 0.88 ? 2 : 1,
+                    baseAlpha: 0.25 + Math.random() * 0.75,
+                    twinkleSpeed: 0.015 + Math.random() * 0.04,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+
+            // 2. Generate Pixel Clouds across the sunset horizon
+            clouds = [
+                { x: pWidth * 0.08, y: pHeight * 0.67, w: 68, h: 8, speed: 0.03, color: '#6b386c', highlight: '#934c78' },
+                { x: pWidth * 0.25, y: pHeight * 0.62, w: 54, h: 10, speed: 0.045, color: '#582e63', highlight: '#7d4274' },
+                { x: pWidth * 0.78, y: pHeight * 0.64, w: 72, h: 9, speed: 0.035, color: '#6b386c', highlight: '#99517b' },
+                { x: pWidth * 0.50, y: pHeight * 0.72, w: 46, h: 6, speed: 0.055, color: '#8f4768', highlight: '#c96b68' },
+                { x: pWidth * 0.88, y: pHeight * 0.75, w: 60, h: 7, speed: 0.025, color: '#7a3e67', highlight: '#b05b6d' }
+            ];
+
+            // 3. Generate 3 Parallax Blocky Minecraft-style Skyline Layers
+            skylineLayers = [
+                generateBlockyLayer(pHeight * 0.81, 14, 26, '#592c5f', 0.2, false), // Far layer
+                generateBlockyLayer(pHeight * 0.86, 12, 22, '#381d46', 0.5, false), // Mid layer
+                generateBlockyLayer(pHeight * 0.91, 10, 24, '#1b112c', 0.9, true)   // Foreground silhouette with trees & windows
+            ];
+
+            // 4. Rising warm pixel embers near horizon
+            fireflies = [];
+            for (let i = 0; i < 18; i++) {
+                fireflies.push({
+                    x: Math.random() * pWidth,
+                    y: pHeight * 0.65 + Math.random() * (pHeight * 0.25),
+                    vy: -(0.05 + Math.random() * 0.12),
+                    vx: (Math.random() - 0.5) * 0.1,
+                    alpha: Math.random()
+                });
+            }
+        }
+
+        function generateBlockyLayer(baseY, minW, maxW, color, parallaxFactor, hasDetails) {
+            const blocks = [];
+            let curX = -30;
+            while (curX < pWidth + 60) {
+                const w = Math.floor(minW + Math.random() * (maxW - minW));
+                const h = Math.floor(6 + Math.random() * 24);
+                const hasTree = hasDetails && Math.random() > 0.68 && h < 14;
+                const windows = [];
+
+                // Add tiny glowing windows on some foreground buildings
+                if (hasDetails && h > 15 && Math.random() > 0.45) {
+                    const winCols = Math.floor((w - 4) / 4);
+                    const winRows = Math.floor((h - 6) / 5);
+                    for (let r = 0; r < winRows; r++) {
+                        for (let c = 0; c < winCols; c++) {
+                            if (Math.random() > 0.65) {
+                                windows.push({
+                                    rx: 3 + c * 4,
+                                    ry: 3 + r * 5,
+                                    lit: Math.random() > 0.2,
+                                    timer: Math.random() * 200
+                                });
+                            }
+                        }
+                    }
+                }
+
+                blocks.push({ x: curX, w, h, hasTree, windows });
+                curX += w - 1;
+            }
+            return { baseY, color, parallaxFactor, blocks, hasDetails };
+        }
+
+        // Spawn Shooting Stars / Meteors
+        function spawnMeteor() {
+            meteors.push({
+                x: Math.random() * (pWidth * 0.8) + pWidth * 0.1,
+                y: Math.random() * (pHeight * 0.35),
+                vx: -2.2 - Math.random() * 1.5,
+                vy: 1.1 + Math.random() * 0.8,
+                length: 12 + Math.floor(Math.random() * 10),
+                life: 1.0
+            });
+        }
+
+        function spawnMeteorShower() {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(spawnMeteor, i * 180);
+            }
+        }
+
+        // Helper to interpolate sky colors
+        function getSkyColorAt(ratio, theme) {
+            for (let i = 0; i < theme.length - 1; i++) {
+                const curr = theme[i];
+                const next = theme[i + 1];
+                if (ratio >= curr.stop && ratio <= next.stop) {
+                    const t = (ratio - curr.stop) / (next.stop - curr.stop);
+                    const r = Math.round(curr.color[0] + (next.color[0] - curr.color[0]) * t);
+                    const g = Math.round(curr.color[1] + (next.color[1] - curr.color[1]) * t);
+                    const b = Math.round(curr.color[2] + (next.color[2] - curr.color[2]) * t);
+                    return `rgb(${r},${g},${b})`;
+                }
+            }
+            const last = theme[theme.length - 1].color;
+            return `rgb(${last[0]},${last[1]},${last[2]})`;
+        }
+
+        // Draw segmented pixel-art cloud matching the Horizon screenshot
+        function drawPixelCloud(cx, cy, w, h, mainColor, highlightColor) {
+            const x = Math.round(cx);
+            const y = Math.round(cy);
+            // Bottom flat base highlight
+            ctx.fillStyle = highlightColor;
+            ctx.fillRect(x - Math.floor(w * 0.6), y + h, Math.floor(w * 1.4), 2);
+
+            // Main cloud body steps
+            ctx.fillStyle = mainColor;
+            ctx.fillRect(x, y + 4, w, h - 4);
+            ctx.fillRect(x + 6, y + 2, Math.floor(w * 0.75), 2);
+            ctx.fillRect(x + 14, y, Math.floor(w * 0.45), 2);
+            ctx.fillRect(x - 8, y + h - 3, w + 16, 3);
+        }
+
+        // Main Render Loop
+        let time = 0;
+        function animate() {
+            time += 1;
+
+            // Smooth Mouse Parallax
+            currentMouseX += (targetMouseX - currentMouseX) * 0.05;
+            currentMouseY += (targetMouseY - currentMouseY) * 0.05;
+
+            const theme = skyThemes[currentThemeIndex];
+
+            // 1. Draw Banded Pixel Sky Gradient
+            const bandHeight = 2;
+            for (let y = 0; y < pHeight; y += bandHeight) {
+                const ratio = y / pHeight;
+                ctx.fillStyle = getSkyColorAt(ratio, theme);
+                ctx.fillRect(0, y, pWidth, bandHeight);
+            }
+
+            // 2. Draw Twinkling Pixel Stars
+            stars.forEach(star => {
+                const twinkle = Math.sin(time * star.twinkleSpeed + star.phase) * 0.35 + 0.65;
+                const alpha = Math.max(0.1, Math.min(1, star.baseAlpha * twinkle));
+                const sx = Math.round(star.x - currentMouseX * 3);
+                const sy = Math.round(star.y - currentMouseY * 2);
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(2)})`;
+                ctx.fillRect(sx, sy, star.size, star.size);
+            });
+
+            // Occasional random shooting star
+            if (Math.random() < 0.008) {
+                spawnMeteor();
+            }
+
+            // 3. Draw Shooting Stars
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                const m = meteors[i];
+                m.x += m.vx;
+                m.y += m.vy;
+                m.life -= 0.025;
+
+                if (m.life <= 0) {
+                    meteors.splice(i, 1);
+                    continue;
+                }
+
+                for (let t = 0; t < m.length; t++) {
+                    const trailAlpha = (1 - t / m.length) * m.life;
+                    ctx.fillStyle = `rgba(255, 240, 255, ${trailAlpha.toFixed(2)})`;
+                    ctx.fillRect(Math.round(m.x - m.vx * t * 0.35), Math.round(m.y - m.vy * t * 0.35), 1, 1);
+                }
+            }
+
+            // 4. Draw Retro Pixelated Sunset Sun (Right-Center matching screenshot)
+            const sunCenterX = Math.round(pWidth * 0.615 - currentMouseX * 5);
+            const sunCenterY = Math.round(pHeight * 0.77 + Math.sin(time * 0.02) * 1.5 - currentMouseY * 3);
+            const sunRadius = Math.max(24, Math.floor(pWidth * 0.068));
+
+            // Sun Outer Atmospheric Glow
+            const glowGrad = ctx.createRadialGradient(sunCenterX, sunCenterY, sunRadius * 0.4, sunCenterX, sunCenterY, sunRadius * 2.4);
+            glowGrad.addColorStop(0, 'rgba(255, 210, 120, 0.38)');
+            glowGrad.addColorStop(0.5, 'rgba(240, 115, 90, 0.16)');
+            glowGrad.addColorStop(1, 'rgba(165, 58, 107, 0)');
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(sunCenterX - sunRadius * 2.5, sunCenterY - sunRadius * 2.5, sunRadius * 5, sunRadius * 5);
+
+            // Pixelated Sun Disc with Horizontal Color Bands (Top pale yellow -> bottom warm orange)
+            for (let dy = -sunRadius; dy <= sunRadius; dy++) {
+                // Calculate horizontal chord width for pixelated circle steps
+                const stepY = Math.floor(dy / 2) * 2;
+                const halfW = Math.round(Math.sqrt(Math.max(0, sunRadius * sunRadius - stepY * stepY)));
+                
+                // Normalize vertical position within the sun [0..1]
+                const normY = (dy + sunRadius) / (sunRadius * 2);
+
+                // Segmented color bands matching the screenshot
+                if (normY < 0.28) {
+                    ctx.fillStyle = '#fff5b8';
+                } else if (normY < 0.52) {
+                    ctx.fillStyle = '#ffe082';
+                } else if (normY < 0.74) {
+                    ctx.fillStyle = '#ffc062';
+                } else {
+                    ctx.fillStyle = '#f99b52';
+                }
+
+                ctx.fillRect(sunCenterX - halfW, sunCenterY + dy, halfW * 2, 1);
+            }
+
+            // Horizontal Horizon Haze Line cutting across the sun
+            ctx.fillStyle = 'rgba(229, 115, 98, 0.55)';
+            ctx.fillRect(0, sunCenterY - 2, pWidth, 2);
+
+            // 5. Draw Drifting Pixel Clouds
+            clouds.forEach(c => {
+                c.x += c.speed;
+                if (c.x - 40 > pWidth) {
+                    c.x = -c.w - 40;
+                }
+                const cx = c.x - currentMouseX * 8;
+                const cy = c.y - currentMouseY * 4;
+                drawPixelCloud(cx, cy, c.w, c.h, c.color, c.highlight);
+            });
+
+            // 6. Draw Floating Horizon Embers / Fireflies
+            fireflies.forEach(f => {
+                f.x += f.vx;
+                f.y += f.vy;
+                if (f.y < pHeight * 0.55) {
+                    f.y = pHeight * 0.88;
+                    f.x = Math.random() * pWidth;
+                }
+                const pulse = (Math.sin(time * 0.06 + f.x) + 1) * 0.4;
+                ctx.fillStyle = `rgba(255, 215, 130, ${pulse.toFixed(2)})`;
+                ctx.fillRect(Math.round(f.x), Math.round(f.y), 1, 1);
+            });
+
+            // 7. Draw 3 Multi-layered Blocky Minecraft City/Terrain Silhouettes
+            skylineLayers.forEach((layer, idx) => {
+                const offsetX = Math.round(-currentMouseX * 14 * layer.parallaxFactor);
+                const offsetY = Math.round(-currentMouseY * 5 * layer.parallaxFactor);
+                const layerBaseY = Math.round(layer.baseY + offsetY);
+
+                // Fill solid ground beneath layerBaseY
+                ctx.fillStyle = layer.color;
+                ctx.fillRect(0, layerBaseY, pWidth, pHeight - layerBaseY + 20);
+
+                // Draw each blocky structure
+                layer.blocks.forEach(b => {
+                    const bx = b.x + offsetX;
+                    const by = layerBaseY - b.h;
+
+                    ctx.fillStyle = layer.color;
+                    ctx.fillRect(bx, by, b.w, b.h);
+
+                    // Draw pixelated Minecraft-style oak tree on some foreground blocks
+                    if (b.hasTree) {
+                        const tx = bx + Math.floor(b.w / 2);
+                        const ty = by;
+                        // Trunk
+                        ctx.fillRect(tx, ty - 4, 2, 4);
+                        // Blocky foliage crown
+                        ctx.fillRect(tx - 3, ty - 8, 8, 4);
+                        ctx.fillRect(tx - 2, ty - 10, 6, 2);
+                    }
+
+                    // Draw tiny warm blinking windows on foreground layer
+                    if (layer.hasDetails && b.windows.length > 0) {
+                        b.windows.forEach(win => {
+                            win.timer += 1;
+                            if (win.timer > 360 && Math.random() < 0.01) {
+                                win.lit = !win.lit;
+                                win.timer = 0;
+                            }
+                            if (win.lit) {
+                                ctx.fillStyle = '#f5b864';
+                                ctx.fillRect(bx + win.rx, by + win.ry, 2, 2);
+                            }
+                        });
+                    }
+                });
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            initScene();
+        });
+
+        window.onload = function () {
+            initScene();
+            updateBenchmark();
+            animate();
+        };
+    </script>
+</body>
+</html>
