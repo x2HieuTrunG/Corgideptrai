@@ -32,7 +32,7 @@ do
 
 		task.wait()
 
-		-- [[ SEA HUB GUI ADAPTER BRIDGE FOR ZERO HUB ]]
+		
 local function InitSeaHubBridge()
     pcall(function()
         local core = gethui and gethui() or game:GetService("CoreGui")
